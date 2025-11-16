@@ -14,9 +14,14 @@ export const quizService = {
     return mockQuizzes.find(q => q.Assessment_ID === quizId) || null
   },
 
+  async getQuizzesByCourse(userId: number, courseId: number): Promise<Quiz[]> {
+    await delay(300)
+    return mockQuizzes.filter(q => q.University_ID === userId && q.Course_ID === courseId)
+  },
+
   async submitQuiz(
     quizId: number,
-    answers: Record<string, string>
+    _answers: Record<string, string>
   ): Promise<{ success: boolean; score?: number; error?: string }> {
     await delay(1000)
     
@@ -27,7 +32,6 @@ export const quizService = {
 
     // Simple scoring (in real app, this would be more complex)
     const score = Math.random() * 10 // Mock score
-    const passed = score >= quiz.pass_score
 
     return {
       success: true,

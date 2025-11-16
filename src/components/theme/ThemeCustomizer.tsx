@@ -3,8 +3,9 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Check, Moon, Sun } from 'lucide-react'
+import { Check, Moon, Sun, Palette, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getNeoBrutalismButtonClasses, getNeoBrutalismInputClasses, getNeoBrutalismTextClasses } from '@/lib/utils/theme-utils'
 
 const FONT_OPTIONS = [
   { value: "'Inter', system-ui, sans-serif", label: 'Inter' },
@@ -23,30 +24,29 @@ const COLOR_PRESETS = [
 ]
 
 export default function ThemeCustomizer() {
-  const { primaryColor, fontFamily, darkMode, setPrimaryColor, setFontFamily, toggleDarkMode, resetTheme } = useThemeStore()
-  const [customColor, setCustomColor] = useState('#1e293b')
+  const { primaryColor, fontFamily, darkMode, neoBrutalismMode, setPrimaryColor, setFontFamily, toggleDarkMode, setNeoBrutalismMode, resetTheme } = useThemeStore()
   const [showSuccess, setShowSuccess] = useState(false)
   const [tempFontFamily, setTempFontFamily] = useState(fontFamily)
   const [tempPrimaryColor, setTempPrimaryColor] = useState(primaryColor)
   const [tempCustomColor, setTempCustomColor] = useState('#1e293b')
   const [tempDarkMode, setTempDarkMode] = useState(darkMode)
+  const [tempNeoBrutalismMode, setTempNeoBrutalismMode] = useState(neoBrutalismMode)
 
   useEffect(() => {
     // Initialize customColor from primaryColor
     const hex = hslToHex(primaryColor)
-    setCustomColor(hex)
     setTempCustomColor(hex)
     setTempFontFamily(fontFamily)
     setTempPrimaryColor(primaryColor)
     setTempDarkMode(darkMode)
-  }, [primaryColor, fontFamily, darkMode])
+    setTempNeoBrutalismMode(neoBrutalismMode)
+  }, [primaryColor, fontFamily, darkMode, neoBrutalismMode])
 
   const handleColorChange = (color: string) => {
     // Convert hex to HSL
     const hsl = hexToHsl(color)
     setTempPrimaryColor(hsl)
     setTempCustomColor(color)
-    setCustomColor(color)
   }
 
   const handlePresetColor = (hsl: string) => {
@@ -54,7 +54,6 @@ export default function ThemeCustomizer() {
     // Convert HSL back to hex for display
     const hex = hslToHex(hsl)
     setTempCustomColor(hex)
-    setCustomColor(hex)
   }
 
   const handleFontChange = (font: string) => {
@@ -67,7 +66,7 @@ export default function ThemeCustomizer() {
     if (tempDarkMode !== darkMode) {
       toggleDarkMode()
     }
-    setCustomColor(tempCustomColor)
+    setNeoBrutalismMode(tempNeoBrutalismMode)
     setShowSuccess(true)
     setTimeout(() => {
       setShowSuccess(false)
@@ -75,24 +74,35 @@ export default function ThemeCustomizer() {
   }
 
   const hasChanges = () => {
-    return tempPrimaryColor !== primaryColor || tempFontFamily !== fontFamily || tempDarkMode !== darkMode
+    return tempPrimaryColor !== primaryColor || tempFontFamily !== fontFamily || tempDarkMode !== darkMode || tempNeoBrutalismMode !== neoBrutalismMode
   }
 
   return (
     <div className="space-y-8">
       {/* Dark Mode Toggle */}
       <div className="space-y-4">
-        <Label className="text-sm font-medium text-[#211c37] dark:text-white mb-4 block">
+        <Label className={cn(
+          "text-sm font-medium text-[#211c37] dark:text-white mb-4 block",
+          getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
+        )}>
           Chế độ giao diện
         </Label>
-        <div className="flex items-center justify-between p-4 bg-[#f5f7f9] dark:bg-[#1a1a1a] rounded-xl border border-[#e7eae9] dark:border-[#333]">
+        <div className={cn(
+          "flex items-center justify-between p-4 bg-[#f5f7f9] dark:bg-[#1a1a1a]",
+          tempNeoBrutalismMode
+            ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+            : "rounded-xl border border-[#e7eae9] dark:border-[#333]"
+        )}>
           <div className="flex items-center gap-3">
             {tempDarkMode ? (
               <Moon className="w-5 h-5 text-[#211c37] dark:text-white" />
             ) : (
               <Sun className="w-5 h-5 text-[#211c37] dark:text-white" />
             )}
-            <span className="text-sm font-medium text-[#211c37] dark:text-white">
+            <span className={cn(
+              "text-sm font-medium text-[#211c37] dark:text-white",
+              getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
+            )}>
               {tempDarkMode ? 'Dark Mode' : 'Light Mode'}
             </span>
           </div>
@@ -113,10 +123,65 @@ export default function ThemeCustomizer() {
         </div>
       </div>
 
+      {/* Neo-Brutalism Theme Toggle */}
+      <div className="space-y-4">
+        <Label className={cn(
+          "text-sm font-medium text-[#211c37] dark:text-white mb-4 block",
+          getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
+        )}>
+          Style Theme
+        </Label>
+        <div className={cn(
+          "flex items-center justify-between p-4 bg-[#f5f7f9] dark:bg-[#1a1a1a]",
+          tempNeoBrutalismMode
+            ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+            : "rounded-xl border border-[#e7eae9] dark:border-[#333]"
+        )}>
+          <div className="flex items-center gap-3">
+            {tempNeoBrutalismMode ? (
+              <Square className="w-5 h-5 text-[#211c37] dark:text-white" />
+            ) : (
+              <Palette className="w-5 h-5 text-[#211c37] dark:text-white" />
+            )}
+            <div className="flex flex-col">
+              <span className={cn(
+                "text-sm font-medium text-[#211c37] dark:text-white",
+                getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
+              )}>
+                {tempNeoBrutalismMode ? 'Neo-Brutalism' : 'Normal'}
+              </span>
+              <span className={cn(
+                "text-xs text-[#85878d] dark:text-gray-400",
+                getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'body')
+              )}>
+                {tempNeoBrutalismMode ? 'Bold borders, sharp shadows' : 'Smooth, rounded design'}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => setTempNeoBrutalismMode(!tempNeoBrutalismMode)}
+            className={cn(
+              "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+              tempNeoBrutalismMode ? "bg-[#3bafa8]" : "bg-gray-300"
+            )}
+          >
+            <span
+              className={cn(
+                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                tempNeoBrutalismMode ? "translate-x-6" : "translate-x-1"
+              )}
+            />
+          </button>
+        </div>
+      </div>
+
       {/* Color Customization */}
       <div className="space-y-4">
         <div>
-          <Label className="text-sm font-medium text-[#211c37] dark:text-white mb-4 block">
+          <Label className={cn(
+            "text-sm font-medium text-[#211c37] dark:text-white mb-4 block",
+            getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
+          )}>
             Màu chủ đạo
           </Label>
           
@@ -127,10 +192,17 @@ export default function ThemeCustomizer() {
                 key={preset.name}
                 onClick={() => handlePresetColor(preset.value)}
                 className={cn(
-                  "h-12 rounded-xl border-2 transition-colors",
+                  "h-12 border-2 transition-all",
+                  tempNeoBrutalismMode
+                    ? "border-4 rounded-none"
+                    : "rounded-xl border-2",
                   tempPrimaryColor === preset.value
-                    ? "border-[#3bafa8] ring-2 ring-[#3bafa8] ring-offset-2"
-                    : "border-[#e7eae9] hover:border-[#3bafa8]"
+                    ? tempNeoBrutalismMode
+                      ? "border-[#1a1a1a] dark:border-[#FFFBEB] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                      : "border-[#3bafa8] ring-2 ring-[#3bafa8] ring-offset-2"
+                    : tempNeoBrutalismMode
+                      ? "border-[#1a1a1a] dark:border-[#FFFBEB] hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                      : "border-[#e7eae9] hover:border-[#3bafa8]"
                 )}
                 style={{
                   backgroundColor: hslToHex(preset.value),
@@ -146,13 +218,23 @@ export default function ThemeCustomizer() {
               type="color"
               value={tempCustomColor}
               onChange={(e) => handleColorChange(e.target.value)}
-              className="h-12 w-20 rounded-xl border border-[#e7eae9] cursor-pointer"
+              className={cn(
+                "h-12 w-20 cursor-pointer",
+                tempNeoBrutalismMode
+                  ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                  : "rounded-xl border border-[#e7eae9]"
+              )}
             />
             <Input
               type="text"
               value={tempCustomColor}
               onChange={(e) => handleColorChange(e.target.value)}
-              className="flex-1 border-[#e7eae9] rounded-xl h-12"
+              className={cn(
+                "flex-1 h-12",
+                tempNeoBrutalismMode
+                  ? getNeoBrutalismInputClasses(tempNeoBrutalismMode)
+                  : "border-[#e7eae9] rounded-xl"
+              )}
               placeholder="#1e293b"
             />
           </div>
@@ -161,13 +243,21 @@ export default function ThemeCustomizer() {
 
       {/* Font Customization */}
       <div className="space-y-4">
-        <Label className="text-sm font-medium text-[#211c37] dark:text-white mb-4 block">
+        <Label className={cn(
+          "text-sm font-medium text-[#211c37] dark:text-white mb-4 block",
+          getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
+        )}>
           Font chữ
         </Label>
         <select
           value={tempFontFamily}
           onChange={(e) => handleFontChange(e.target.value)}
-          className="w-full px-4 py-3 border border-[#e7eae9] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-xl focus:ring-2 focus:ring-[#3bafa8] focus:border-transparent h-12 text-sm font-medium text-[#211c37] dark:text-white"
+          className={cn(
+            "w-full px-4 py-3 border bg-white dark:bg-[#1a1a1a] h-12 text-sm font-medium text-[#211c37] dark:text-white",
+            tempNeoBrutalismMode
+              ? getNeoBrutalismInputClasses(tempNeoBrutalismMode, "appearance-none cursor-pointer")
+              : "border-[#e7eae9] dark:border-[#333] rounded-xl focus:ring-2 focus:ring-[#3bafa8] focus:border-transparent"
+          )}
         >
           {FONT_OPTIONS.map((font) => (
             <option key={font.value} value={font.value}>
@@ -177,8 +267,16 @@ export default function ThemeCustomizer() {
         </select>
         
         {/* Font Preview */}
-        <div className="mt-4 p-6 bg-[#f5f7f9] dark:bg-[#1a1a1a] rounded-xl border border-[#e7eae9] dark:border-[#333]">
-          <p className="text-base text-[#211c37] dark:text-white" style={{ fontFamily: tempFontFamily }}>
+        <div className={cn(
+          "mt-4 p-6 bg-[#f5f7f9] dark:bg-[#1a1a1a]",
+          tempNeoBrutalismMode
+            ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+            : "rounded-xl border border-[#e7eae9] dark:border-[#333]"
+        )}>
+          <p className={cn(
+            "text-base text-[#211c37] dark:text-white",
+            getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'body')
+          )} style={{ fontFamily: tempFontFamily }}>
             Xem trước font chữ: The quick brown fox jumps over the lazy dog
           </p>
         </div>
@@ -189,31 +287,46 @@ export default function ThemeCustomizer() {
         <Button
           onClick={handleSave}
           disabled={!hasChanges()}
-          className="flex-1 bg-black dark:bg-white text-white dark:text-black rounded-xl h-12 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className={cn(
+            "flex-1 h-12 transition-all",
+            tempNeoBrutalismMode
+              ? getNeoBrutalismButtonClasses(tempNeoBrutalismMode, 'primary', "bg-black dark:bg-white text-white dark:text-black")
+              : "bg-black dark:bg-white text-white dark:text-black rounded-xl hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          )}
         >
           {showSuccess ? (
             <>
               <Check className="w-4 h-4 mr-2" />
-              Đã lưu!
+              <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>Đã lưu!</span>
             </>
           ) : (
-            'Lưu thay đổi'
+            <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>Lưu thay đổi</span>
           )}
         </Button>
         <Button
           onClick={resetTheme}
           variant="outline"
-          className="flex-1 border-[#e7eae9] dark:border-[#333] rounded-xl h-12 text-[#211c37] dark:text-white hover:bg-[#f5f7f9] dark:hover:bg-[#2a2a2a] transition-colors"
+          className={cn(
+            "flex-1 h-12 text-[#211c37] dark:text-white transition-all",
+            tempNeoBrutalismMode
+              ? getNeoBrutalismButtonClasses(tempNeoBrutalismMode, 'outline', "border-[#1a1a1a] dark:border-[#FFFBEB] hover:bg-[#f5f7f9] dark:hover:bg-[#2a2a2a]")
+              : "border-[#e7eae9] dark:border-[#333] rounded-xl hover:bg-[#f5f7f9] dark:hover:bg-[#2a2a2a]"
+          )}
         >
-          Đặt lại mặc định
+          <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>Đặt lại mặc định</span>
         </Button>
       </div>
 
       {/* Success Message */}
       {showSuccess && (
-        <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 rounded-xl text-sm flex items-center gap-2">
+        <div className={cn(
+          "mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm flex items-center gap-2",
+          tempNeoBrutalismMode
+            ? "border-4 border-green-600 dark:border-green-400 rounded-none shadow-[4px_4px_0px_0px_rgba(34,197,94,1)] dark:shadow-[4px_4px_0px_0px_rgba(74,222,128,1)]"
+            : "rounded-xl"
+        )}>
           <Check className="w-4 h-4" />
-          <span>Đã lưu thành công! Các thay đổi đã được áp dụng.</span>
+          <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>Đã lưu thành công! Các thay đổi đã được áp dụng.</span>
         </div>
       )}
     </div>

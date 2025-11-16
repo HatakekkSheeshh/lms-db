@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { courseService } from '@/lib/api/courseService'
 import type { Section, Course } from '@/types'
 import { ROUTES } from '@/constants/routes'
-import { ArrowLeft, Users, Calendar } from 'lucide-react'
+import { ArrowLeft, Users } from 'lucide-react'
 
 export default function SectionPage() {
   const { courseId, sectionId } = useParams<{ courseId: string; sectionId: string }>()

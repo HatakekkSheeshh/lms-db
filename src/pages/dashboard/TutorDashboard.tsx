@@ -11,9 +11,10 @@ import type { Course, Assignment } from '@/types'
 import { Search, Bell, BookOpen, Users, FileCheck, ChevronDown, Check, Edit2, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@/components/ui/chart'
+import { useNeoBrutalismMode, getNeoBrutalismCardClasses, getNeoBrutalismInputClasses, getNeoBrutalismStatCardClasses, getNeoBrutalismCourseCardClasses, getNeoBrutalismTextClasses } from '@/lib/utils/theme-utils'
+import { cn } from '@/lib/utils'
 import '@/lib/animations/gsap-setup'
 
 // Figma assets URLs
@@ -28,6 +29,7 @@ export default function TutorDashboard() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
+  const neoBrutalismMode = useNeoBrutalismMode()
 
   useGSAP(() => {
     if (containerRef.current) {
@@ -73,7 +75,7 @@ export default function TutorDashboard() {
     )
   }
 
-  const pendingGrading = assignments.filter(a => a.Status === 'submitted').length
+  const pendingGrading = assignments.length // Mock: Count all assignments as pending grading
   const totalStudents = 120 // Mock data
   const totalCourses = courses.length
 
@@ -108,7 +110,7 @@ export default function TutorDashboard() {
   const courseCards = courses.length > 0
     ? courses.slice(0, 3).map((course, index) => ({
         ...cardConfigs[index] || cardConfigs[0],
-        title: course.Course_Name,
+        title: course.Name,
         courseId: course.Course_ID,
       }))
     : fallbackCourses.map((course, index) => ({
@@ -129,11 +131,11 @@ export default function TutorDashboard() {
     navigate(ROUTES.COURSE_DETAIL.replace(':courseId', courseId.toString()))
   }
 
-  const handleTodoClick = (todo: typeof todos[0]) => {
+  const handleTodoClick = (_todo: typeof todos[0]) => {
     navigate(ROUTES.ASSIGNMENTS)
   }
 
-  const handleCalendarNavigation = (direction: 'prev' | 'next') => {
+  const handleCalendarNavigation = (_direction: 'prev' | 'next') => {
     navigate(ROUTES.SCHEDULE)
   }
 
@@ -176,17 +178,30 @@ export default function TutorDashboard() {
       {/* Profile */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-black dark:text-white">Profile</h3>
+          <h3 className={cn(
+            "text-lg font-semibold text-black dark:text-white",
+            getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+          )}>Profile</h3>
           <Link
             to={ROUTES.PROFILE}
-            className="w-14 h-14 border border-[#e7eae9] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-xl flex items-center justify-center hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"
+            className={cn(
+              "w-14 h-14 flex items-center justify-center cursor-pointer transition-all",
+              neoBrutalismMode
+                ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] bg-white dark:bg-[#2a2a2a] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,251,235,1)]"
+                : "border border-[#e7eae9] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-xl hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"
+            )}
           >
             <Edit2 className="w-6 h-6 text-[#85878d] dark:text-gray-400" />
           </Link>
         </div>
         <div className="flex flex-col items-center">
           <div className="relative mb-3">
-            <div className="w-[101px] h-[101px] rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-4 border-white dark:border-[#1a1a1a] shadow-lg">
+            <div className={cn(
+              "w-[101px] h-[101px] bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-4 shadow-lg",
+              neoBrutalismMode
+                ? "border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,251,235,1)]"
+                : "rounded-full border-white dark:border-[#1a1a1a]"
+            )}>
               {imgProfilePicture ? (
                 <img src={imgProfilePicture} alt="Profile" className="w-full h-full object-cover" />
               ) : (
@@ -199,16 +214,27 @@ export default function TutorDashboard() {
               <img src={imgVerificationIcon} alt="Verified" className="w-full h-full" />
             </div>
           </div>
-          <p className="font-semibold text-lg text-black dark:text-white mb-1">
+          <p className={cn(
+            "font-semibold text-lg text-black dark:text-white mb-1",
+            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+          )}>
             {user?.First_Name} {user?.Last_Name || 'Tutor'}
           </p>
-          <p className="text-sm text-black dark:text-gray-300 font-medium">Instructor</p>
+          <p className={cn(
+            "text-sm text-black dark:text-gray-300 font-medium",
+            getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+          )}>Instructor</p>
         </div>
       </div>
 
       {/* Calendar */}
       <Card 
-        className="bg-[#f8f8f8] dark:bg-[#1a1a1a] border-0 rounded-3xl p-4 mb-6 cursor-pointer hover:shadow-md dark:hover:shadow-lg transition-shadow"
+        className={cn(
+          "p-4 mb-6 cursor-pointer",
+          neoBrutalismMode
+            ? getNeoBrutalismCardClasses(neoBrutalismMode, "hover:translate-x-1 hover:translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,251,235,1)] transition-all")
+            : "bg-[#f8f8f8] dark:bg-[#1a1a1a] border-0 rounded-3xl hover:shadow-md dark:hover:shadow-lg transition-shadow"
+        )}
         onClick={() => navigate(ROUTES.SCHEDULE)}
       >
         <div className="flex items-center justify-between mb-4">
@@ -219,7 +245,10 @@ export default function TutorDashboard() {
               handleCalendarNavigation('prev')
             }}
           />
-          <span className="text-sm font-semibold text-black dark:text-white">December 2021</span>
+          <span className={cn(
+            "text-sm font-semibold text-black dark:text-white",
+            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+          )}>December 2021</span>
           <ChevronRight 
             className="w-4 h-4 cursor-pointer text-[#676767] dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
             onClick={(e) => {
@@ -237,11 +266,18 @@ export default function TutorDashboard() {
           {calendarDays.map((day) => (
             <div
               key={day}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-medium transition-colors ${
-                day === 25 
-                  ? 'bg-black dark:bg-white text-white dark:text-black' 
-                  : 'text-[#676767] dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#2a2a2a] cursor-pointer'
-              }`}
+              className={cn(
+                "w-8 h-8 flex items-center justify-center text-[10px] font-medium transition-all cursor-pointer",
+                neoBrutalismMode
+                  ? day === 25
+                    ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] bg-black dark:bg-white text-white dark:text-black shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,251,235,1)] rounded-none"
+                    : "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] bg-white dark:bg-[#1a1a1a] text-[#676767] dark:text-gray-400 rounded-none hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,251,235,1)]"
+                  : `rounded-full transition-colors ${
+                      day === 25 
+                        ? 'bg-black dark:bg-white text-white dark:text-black' 
+                        : 'text-[#676767] dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#2a2a2a]'
+                    }`
+              )}
             >
               {day}
             </div>
@@ -251,20 +287,35 @@ export default function TutorDashboard() {
 
       {/* To Do List */}
       <div>
-        <h3 className="text-lg font-semibold text-black dark:text-white text-center mb-4">Tasks</h3>
+        <h3 className={cn(
+          "text-lg font-semibold text-black dark:text-white text-center mb-4",
+          getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+        )}>Tasks</h3>
         <div className="space-y-3">
           {todos.map((todo) => (
             <div
               key={todo.id}
-              className="flex gap-3 items-start cursor-pointer hover:bg-gray-50 dark:hover:bg-[#2a2a2a] p-2 rounded-lg transition-colors"
+              className={cn(
+                "flex gap-3 items-start cursor-pointer p-2 transition-all",
+                neoBrutalismMode
+                  ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] bg-white dark:bg-[#2a2a2a] rounded-none shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,251,235,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,251,235,1)]"
+                  : "hover:bg-gray-50 dark:hover:bg-[#2a2a2a] rounded-lg transition-colors"
+              )}
               onClick={() => handleTodoClick(todo)}
             >
               <div
-                className={`w-[18px] h-[18px] rounded border-2 flex items-center justify-center mt-0.5 flex-shrink-0 transition-colors ${
-                  todo.checked
-                    ? 'bg-[#3bafa8] border-[#3bafa8]'
-                    : 'border-[#676767] dark:border-gray-500 hover:border-[#3bafa8]'
-                }`}
+                className={cn(
+                  "w-[18px] h-[18px] border-2 flex items-center justify-center mt-0.5 flex-shrink-0 transition-all",
+                  neoBrutalismMode
+                    ? todo.checked
+                      ? "border-[#1a1a1a] dark:border-[#FFFBEB] bg-[#3bafa8] dark:bg-[#3bafa8] rounded-none shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,251,235,1)]"
+                      : "border-[#1a1a1a] dark:border-[#FFFBEB] bg-white dark:bg-[#1a1a1a] rounded-none shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,251,235,1)] hover:bg-gray-100 dark:hover:bg-[#2a2a2a]"
+                    : `rounded transition-colors ${
+                        todo.checked
+                          ? 'bg-[#3bafa8] border-[#3bafa8]'
+                          : 'border-[#676767] dark:border-gray-500 hover:border-[#3bafa8]'
+                      }`
+                )}
                 onClick={(e) => {
                   e.stopPropagation()
                 }}
@@ -273,17 +324,25 @@ export default function TutorDashboard() {
               </div>
               <div className="flex-1 min-w-0">
                 <p
-                  className={`text-sm font-semibold text-[#42404c] dark:text-white ${
-                    todo.checked ? 'line-through' : ''
-                  }`}
+                  className={cn(
+                    "text-sm font-semibold text-[#42404c] dark:text-white",
+                    getNeoBrutalismTextClasses(neoBrutalismMode, 'bold'),
+                    todo.checked && 'line-through'
+                  )}
                 >
                   {todo.text}
                 </p>
                 {todo.category && (
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-[#676767] dark:text-gray-400 font-medium">{todo.category}</span>
+                    <span className={cn(
+                      "text-sm text-[#676767] dark:text-gray-400 font-medium",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                    )}>{todo.category}</span>
                     <span className="text-[#676767] dark:text-gray-400">•</span>
-                    <span className="text-sm font-semibold text-[#fe764b]">{todo.time}</span>
+                    <span className={cn(
+                      "text-sm font-semibold text-[#fe764b]",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                    )}>{todo.time}</span>
                   </div>
                 )}
               </div>
@@ -301,17 +360,26 @@ export default function TutorDashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl font-semibold text-[#211c37] dark:text-white">
+              <h1 className={cn(
+                "text-2xl font-semibold text-[#211c37] dark:text-white",
+                getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+              )}>
                 Hello {user?.First_Name || 'Tutor'} 👋
               </h1>
             </div>
-            <p className="text-[#85878d] dark:text-gray-400 text-sm font-medium">Manage your courses and students today!</p>
+            <p className={cn(
+              "text-[#85878d] dark:text-gray-400 text-sm font-medium",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+            )}>Manage your courses and students today!</p>
           </div>
           <div className="flex items-center gap-5">
             <form onSubmit={handleSearch} className="relative">
               <Input
                 placeholder="Search courses..."
-                className="w-[322px] border-[#e7eae9] dark:border-[#333] bg-white dark:bg-[#1a1a1a] text-[#211c37] dark:text-white rounded-xl pl-4 pr-10 h-12"
+                className={cn(
+                  "w-[322px] pl-4 pr-10 h-12 text-[#211c37] dark:text-white",
+                  getNeoBrutalismInputClasses(neoBrutalismMode)
+                )}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -322,12 +390,20 @@ export default function TutorDashboard() {
             <div className="relative">
               <Link
                 to={ROUTES.ASSIGNMENTS}
-                className="w-12 h-12 border border-[#e7eae9] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"
+                className={cn(
+                  "w-12 h-12 flex items-center justify-center cursor-pointer transition-all",
+                  neoBrutalismMode
+                    ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] bg-white dark:bg-[#2a2a2a] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,251,235,1)]"
+                    : "border border-[#e7eae9] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-xl hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"
+                )}
               >
                 <Bell className="w-6 h-6 text-[#85878d] dark:text-gray-400" />
               </Link>
               {pendingGrading > 0 && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-[#1a1a1a]"></div>
+                <div className={cn(
+                  "absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white dark:border-[#1a1a1a]",
+                  neoBrutalismMode ? "rounded-none shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,251,235,1)]" : "rounded-full"
+                )}></div>
               )}
             </div>
           </div>
@@ -335,11 +411,11 @@ export default function TutorDashboard() {
 
         {/* Stats Cards */}
         <div className="flex gap-5 mb-6">
-          <Card className="flex-1 border border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-xl p-6">
+          <Card className={cn("flex-1 p-6", getNeoBrutalismStatCardClasses(neoBrutalismMode))}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[#85878d] dark:text-gray-400 font-medium mb-1">Total Courses</p>
-                <p className="text-3xl font-bold text-black dark:text-white">{totalCourses}</p>
+                <p className={cn("text-3xl font-bold text-black dark:text-white", getNeoBrutalismTextClasses(neoBrutalismMode, 'bold'))}>{totalCourses}</p>
               </div>
               <div className="w-12 h-12 bg-[#e1e2f6] dark:bg-[#2a2a2a] rounded-lg flex items-center justify-center">
                 <BookOpen className="w-6 h-6 text-purple-600 dark:text-purple-400" />
@@ -347,11 +423,11 @@ export default function TutorDashboard() {
             </div>
           </Card>
 
-          <Card className="flex-1 border border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-xl p-6">
+          <Card className={cn("flex-1 p-6", getNeoBrutalismStatCardClasses(neoBrutalismMode))}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[#85878d] dark:text-gray-400 font-medium mb-1">Total Students</p>
-                <p className="text-3xl font-bold text-black dark:text-white">{totalStudents}</p>
+                <p className={cn("text-3xl font-bold text-black dark:text-white", getNeoBrutalismTextClasses(neoBrutalismMode, 'bold'))}>{totalStudents}</p>
               </div>
               <div className="w-12 h-12 bg-[#f8efe2] dark:bg-[#2a2a2a] rounded-lg flex items-center justify-center">
                 <Users className="w-6 h-6 text-orange-600 dark:text-orange-400" />
@@ -359,7 +435,7 @@ export default function TutorDashboard() {
             </div>
           </Card>
 
-          <Card className="flex-1 border border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-xl p-6">
+          <Card className={cn("flex-1 p-6", getNeoBrutalismStatCardClasses(neoBrutalismMode))}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[#85878d] dark:text-gray-400 font-medium mb-1">Pending Grading</p>
@@ -377,7 +453,12 @@ export default function TutorDashboard() {
           {courseCards.map((course, index) => (
             <Card
               key={index}
-              className={`${course.color} dark:bg-[#2a2a2a] border-0 dark:border-[#333] h-[177px] relative overflow-hidden flex-shrink-0 w-[240px] cursor-pointer hover:shadow-lg dark:hover:shadow-xl transition-shadow`}
+              className={cn(
+                neoBrutalismMode 
+                  ? getNeoBrutalismCourseCardClasses(neoBrutalismMode, "h-[177px] relative overflow-hidden flex-shrink-0 w-[240px]")
+                  : `${course.color} dark:bg-[#2a2a2a] border-0 dark:border-[#333] h-[177px] relative overflow-hidden flex-shrink-0 w-[240px] cursor-pointer hover:shadow-lg dark:hover:shadow-xl transition-shadow`,
+                !neoBrutalismMode && course.color
+              )}
               onClick={() => handleCourseClick(course.courseId)}
             >
               <div className="p-4 h-full flex flex-col justify-between">
@@ -411,8 +492,11 @@ export default function TutorDashboard() {
         {/* Analytics Section */}
         <div className="flex gap-4 mb-6">
           {/* Grading Activity Chart */}
-          <Card className="flex-1 border border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-xl p-6">
-            <h3 className="text-xl font-semibold text-black dark:text-white mb-4">Grading Activity</h3>
+          <Card className={cn("flex-1 p-6", getNeoBrutalismStatCardClasses(neoBrutalismMode))}>
+            <h3 className={cn(
+              "text-xl font-semibold text-black dark:text-white mb-4",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+            )}>Grading Activity</h3>
             <ChartContainer config={chartConfig} className="h-[305px] w-full">
               <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-[#e5e7e7] dark:stroke-[#333]" />
@@ -432,28 +516,42 @@ export default function TutorDashboard() {
                 />
                 <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                 <ChartLegend content={<ChartLegendContent />} />
-                <Bar dataKey="Graded" stackId="a" fill="var(--color-Graded)">
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-graded-${index}`} 
-                      radius={entry.Pending === 0 ? 10 : [0, 0, 10, 10]} 
-                    />
-                  ))}
-                </Bar>
+                  <Bar dataKey="Graded" stackId="a" fill="var(--color-Graded)">
+                    {chartData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-graded-${index}`} 
+                        {...(entry.Pending === 0 ? { radius: 10 } : { radius: [0, 0, 10, 10] as any })} 
+                      />
+                    ))}
+                  </Bar>
                 <Bar dataKey="Pending" stackId="a" fill="var(--color-Pending)" radius={[10, 10, 0, 0]} />
               </BarChart>
             </ChartContainer>
           </Card>
 
           {/* Performance Summary */}
-          <Card className="w-[288px] border border-[#e5e7e9] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-xl p-6 flex-shrink-0">
+          <Card className={cn("w-[288px] p-6 flex-shrink-0", getNeoBrutalismStatCardClasses(neoBrutalismMode))}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#45a8a3] rounded"></div>
-                <span className="text-xs font-semibold text-[#42404c] dark:text-white">Performance</span>
+                <div className={cn(
+                  "w-4 h-4 bg-[#45a8a3]",
+                  neoBrutalismMode ? "rounded-none shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,251,235,1)] border border-[#1a1a1a] dark:border-[#FFFBEB]" : "rounded"
+                )}></div>
+                <span className={cn(
+                  "text-xs font-semibold text-[#42404c] dark:text-white",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                )}>Performance</span>
               </div>
-              <div className="bg-[#eff1f3] dark:bg-[#2a2a2a] rounded px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-[#e5e7e9] dark:hover:bg-[#333] transition-colors">
-                <span className="text-xs font-semibold text-[#424252] dark:text-gray-300">Monthly</span>
+              <div className={cn(
+                "bg-[#eff1f3] dark:bg-[#2a2a2a] px-3 py-1.5 flex items-center gap-2 cursor-pointer transition-all",
+                neoBrutalismMode
+                  ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,251,235,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_0px_rgba(26,26,26,1)] dark:hover:shadow-[1px_1px_0px_0px_rgba(255,251,235,1)]"
+                  : "rounded hover:bg-[#e5e7e9] dark:hover:bg-[#333] transition-colors"
+              )}>
+                <span className={cn(
+                  "text-xs font-semibold text-[#424252] dark:text-gray-300",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                )}>Monthly</span>
                 <ChevronDown className="w-3 h-3 text-[#424252] dark:text-gray-300" />
               </div>
             </div>
@@ -484,20 +582,38 @@ export default function TutorDashboard() {
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-black dark:text-white">85%</div>
-                    <div className="text-xs text-[#83868e] dark:text-gray-400 mt-1">Completion</div>
+                    <div className={cn(
+                      "text-3xl font-bold text-black dark:text-white",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                    )}>85%</div>
+                    <div className={cn(
+                      "text-xs text-[#83868e] dark:text-gray-400 mt-1",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                    )}>Completion</div>
                   </div>
                 </div>
               </div>
               
               <div className="w-full">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-[#83868e] dark:text-gray-400 font-medium">Progress</span>
-                  <span className="text-sm font-semibold text-black dark:text-white">85%</span>
+                  <span className={cn(
+                    "text-sm text-[#83868e] dark:text-gray-400 font-medium",
+                    getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                  )}>Progress</span>
+                  <span className={cn(
+                    "text-sm font-semibold text-black dark:text-white",
+                    getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                  )}>85%</span>
                 </div>
-                <div className="w-full h-2 bg-[#eff1f3] dark:bg-[#333] rounded-full overflow-hidden">
+                <div className={cn(
+                  "w-full h-2 bg-[#eff1f3] dark:bg-[#333] overflow-hidden",
+                  neoBrutalismMode ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : "rounded-full"
+                )}>
                   <div 
-                    className="h-full bg-gradient-to-r from-[#45a8a3] to-[#3bafa8] rounded-full transition-all duration-500"
+                    className={cn(
+                      "h-full bg-gradient-to-r from-[#45a8a3] to-[#3bafa8] transition-all duration-500",
+                      neoBrutalismMode ? "rounded-none" : "rounded-full"
+                    )}
                     style={{ width: '85%' }}
                   ></div>
                 </div>
@@ -505,10 +621,19 @@ export default function TutorDashboard() {
             </div>
             
             <div className="text-center space-y-2">
-              <p className="text-lg text-[#83868e] dark:text-gray-400 font-medium">
-                Courses: <span className="text-black dark:text-white font-bold text-xl">{totalCourses}</span>
+              <p className={cn(
+                "text-lg text-[#83868e] dark:text-gray-400 font-medium",
+                getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+              )}>
+                Courses: <span className={cn(
+                  "text-black dark:text-white font-bold text-xl",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                )}>{totalCourses}</span>
               </p>
-              <div className="flex items-center justify-center gap-1.5 text-[#3bafa8] text-xs font-medium">
+              <div className={cn(
+                "flex items-center justify-center gap-1.5 text-[#3bafa8] text-xs font-medium",
+                getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+              )}>
                 <TrendingUp className="w-3 h-3" />
                 <span>Active Teaching</span>
               </div>

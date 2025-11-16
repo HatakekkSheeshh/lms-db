@@ -8,7 +8,13 @@ import { gradeService } from '@/lib/api/gradeService'
 import { courseService } from '@/lib/api/courseService'
 import type { Assessment, Course } from '@/types'
 import { ROUTES } from '@/constants/routes'
-import { ArrowLeft, BarChart3, Calendar, CheckCircle2, XCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { 
+  useNeoBrutalismMode, 
+  getNeoBrutalismCardClasses, 
+  getNeoBrutalismTextClasses 
+} from '@/lib/utils/theme-utils'
+import { ArrowLeft, BarChart3, Calendar } from 'lucide-react'
 
 export default function GradeDetailPage() {
   const { courseId } = useParams<{ courseId: string }>()
@@ -16,6 +22,7 @@ export default function GradeDetailPage() {
   const [grades, setGrades] = useState<Assessment[]>([])
   const [course, setCourse] = useState<Course | null>(null)
   const [loading, setLoading] = useState(true)
+  const neoBrutalismMode = useNeoBrutalismMode()
 
   useEffect(() => {
     const loadData = async () => {
@@ -44,7 +51,7 @@ export default function GradeDetailPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Đang tải...</div>
+          <div className="text-lg text-[#1f1d39] dark:text-white">Đang tải...</div>
         </div>
       </DashboardLayout>
     )
@@ -63,53 +70,87 @@ export default function GradeDetailPage() {
         <Button
           variant="ghost"
           onClick={() => navigate(ROUTES.GRADES)}
-          className="mb-4 border border-[#e5e7e7] hover:bg-gray-50"
+          className={cn(
+            "mb-4",
+            neoBrutalismMode
+              ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] bg-white dark:bg-[#2a2a2a] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,251,235,1)]"
+              : "border border-[#e5e7e7] dark:border-[#333] hover:bg-gray-50 dark:hover:bg-[#2a2a2a]"
+          )}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Grades
+          <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>Back to Grades</span>
         </Button>
 
-        <Card className="border border-[#e5e7e7] rounded-xl">
+        <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-[#e1e2f6] rounded-lg flex items-center justify-center">
-                <BarChart3 className="h-6 w-6 text-purple-600" />
+              <div className={cn(
+                "w-12 h-12 bg-[#e1e2f6] dark:bg-purple-900/30 flex items-center justify-center",
+                neoBrutalismMode 
+                  ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                  : "rounded-lg"
+              )}>
+                <BarChart3 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <CardTitle className="text-2xl text-[#1f1d39]">
+                <CardTitle className={cn(
+                  "text-2xl text-[#1f1d39] dark:text-white",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                )}>
                   {course?.Name || `Course ${courseId}`}
                 </CardTitle>
-                <CardDescription className="text-[#85878d]">Grade Details</CardDescription>
+                <CardDescription className={cn(
+                  "text-[#85878d] dark:text-gray-400",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                )}>Grade Details</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-[#f5f7f9] rounded-lg">
-              <span className="text-lg font-medium text-[#676767]">Average Grade:</span>
-              <span className="text-2xl font-bold text-[#1f1d39]">{averageGrade}</span>
+            <div className={cn(
+              "flex items-center justify-between p-4 bg-[#f5f7f9] dark:bg-[#2a2a2a]",
+              neoBrutalismMode 
+                ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                : "rounded-lg"
+            )}>
+              <span className={cn(
+                "text-lg font-medium text-[#676767] dark:text-gray-300",
+                getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+              )}>Average Grade:</span>
+              <span className={cn(
+                "text-2xl font-bold text-[#1f1d39] dark:text-white",
+                getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+              )}>{averageGrade}</span>
             </div>
 
             <div className="space-y-3">
               {grades.map((grade) => (
-                <Card key={grade.Assessment_ID} className="border border-[#e5e7e7] rounded-xl">
+                <Card key={grade.Assessment_ID} className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold text-[#1f1d39]">Assessment {grade.Assessment_ID}</p>
+                          <p className={cn(
+                            "font-semibold text-[#1f1d39] dark:text-white",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                          )}>Assessment {grade.Assessment_ID}</p>
                           <Badge
-                            className={
+                            className={cn(
                               grade.Status === 'Approved'
-                                ? 'bg-green-500 text-white'
+                                ? 'bg-green-500 dark:bg-green-600 text-white'
                                 : grade.Status === 'Rejected'
-                                ? 'bg-red-500 text-white'
-                                : 'bg-gray-500 text-white'
-                            }
+                                ? 'bg-red-500 dark:bg-red-600 text-white'
+                                : 'bg-gray-500 dark:bg-gray-600 text-white',
+                              neoBrutalismMode && "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                            )}
                           >
-                            {grade.Status}
+                            <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{grade.Status}</span>
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-[#85878d]">
+                        <div className={cn(
+                          "flex items-center gap-4 text-sm text-[#85878d] dark:text-gray-400",
+                          getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                        )}>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             <span>
@@ -119,8 +160,14 @@ export default function GradeDetailPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-3xl font-bold text-[#3bafa8]">{grade.Grade.toFixed(2)}</div>
-                        <p className="text-sm text-[#85878d]">points</p>
+                        <div className={cn(
+                          "text-3xl font-bold text-[#3bafa8] dark:text-teal-400",
+                          getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                        )}>{grade.Grade.toFixed(2)}</div>
+                        <p className={cn(
+                          "text-sm text-[#85878d] dark:text-gray-400",
+                          getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                        )}>points</p>
                       </div>
                     </div>
                   </CardContent>
@@ -129,8 +176,9 @@ export default function GradeDetailPage() {
             </div>
 
             {grades.length === 0 && (
-              <div className="text-center py-8 text-[#85878d]">
-                No grades available for this course
+              <div className="text-center py-8 text-[#85878d] dark:text-gray-400">
+                <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No grades available for this course</p>
               </div>
             )}
           </CardContent>

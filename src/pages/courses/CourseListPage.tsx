@@ -8,6 +8,15 @@ import { Badge } from '@/components/ui/badge'
 import { courseService } from '@/lib/api/courseService'
 import type { Course } from '@/types'
 import { ROUTES } from '@/constants/routes'
+import { cn } from '@/lib/utils'
+import { 
+  useNeoBrutalismMode, 
+  getNeoBrutalismCardClasses, 
+  getNeoBrutalismInputClasses, 
+  getNeoBrutalismButtonClasses,
+  getNeoBrutalismCourseCardClasses,
+  getNeoBrutalismTextClasses 
+} from '@/lib/utils/theme-utils'
 import { 
   BookOpen, 
   Calendar, 
@@ -25,6 +34,7 @@ export default function CourseListPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'enrolled' | 'available'>('all')
   const navigate = useNavigate()
+  const neoBrutalismMode = useNeoBrutalismMode()
 
   useEffect(() => {
     const loadCourses = async () => {
@@ -65,10 +75,16 @@ export default function CourseListPage() {
         {/* Header Section */}
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-[#211c37] dark:text-white mb-2">
+            <h1 className={cn(
+              "text-3xl font-bold text-[#211c37] dark:text-white mb-2",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+            )}>
               Khóa học của tôi
             </h1>
-            <p className="text-[#85878d] dark:text-gray-400">
+            <p className={cn(
+              "text-[#85878d] dark:text-gray-400",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+            )}>
               Khám phá và tham gia các khóa học mới
             </p>
           </div>
@@ -81,21 +97,25 @@ export default function CourseListPage() {
                 placeholder="Tìm kiếm khóa học..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 border-[#e7eae9] dark:border-[#333] bg-white dark:bg-[#1a1a1a] text-[#211c37] dark:text-white rounded-xl"
+                className={cn(
+                  "pl-12 h-12 bg-white dark:bg-[#1a1a1a] text-[#211c37] dark:text-white",
+                  getNeoBrutalismInputClasses(neoBrutalismMode)
+                )}
               />
             </div>
             <div className="flex gap-2">
               <Button
                 variant={selectedFilter === 'all' ? 'default' : 'outline'}
                 onClick={() => setSelectedFilter('all')}
-                className={`h-12 px-6 rounded-xl ${
+                className={cn(
+                  "h-12 px-6",
                   selectedFilter === 'all'
-                    ? 'bg-black dark:bg-white text-white dark:text-black'
-                    : 'border-[#e7eae9] dark:border-[#333] text-[#211c37] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2a2a2a]'
-                }`}
+                    ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'primary')
+                    : getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline', "text-[#211c37] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2a2a2a]")
+                )}
               >
                 <Filter className="w-4 h-4 mr-2" />
-                Tất cả
+                <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>Tất cả</span>
               </Button>
             </div>
           </div>
@@ -108,18 +128,34 @@ export default function CourseListPage() {
               return (
                 <Card
                   key={course.Course_ID}
-                  className="group relative overflow-hidden border border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-none hover:shadow-2xl dark:hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 flex flex-col h-full"
+                  className={cn(
+                    "group relative overflow-hidden flex flex-col h-full",
+                    getNeoBrutalismCourseCardClasses(neoBrutalismMode, neoBrutalismMode ? "" : "shadow-none hover:shadow-2xl dark:hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1")
+                  )}
                   onClick={() => navigate(ROUTES.COURSE_DETAIL.replace(':courseId', course.Course_ID.toString()))}
                 >
                   {/* Simple Header */}
-                  <div className="relative h-24 bg-[#f5f7f9] dark:bg-[#2a2a2a] overflow-hidden">
+                  <div className={cn(
+                    "relative h-24 overflow-hidden",
+                    neoBrutalismMode 
+                      ? "bg-white dark:bg-[#2a2a2a] border-b-4 border-[#1a1a1a] dark:border-[#FFFBEB]"
+                      : "bg-[#f5f7f9] dark:bg-[#2a2a2a]"
+                  )}>
                     <div className="absolute top-4 right-4">
-                      <Badge className="bg-black dark:bg-white text-white dark:text-black border-0">
-                        {course.Credit} tín chỉ
+                      <Badge className={cn(
+                        "bg-black dark:bg-white text-white dark:text-black",
+                        neoBrutalismMode ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]" : "border-0"
+                      )}>
+                        <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{course.Credit} tín chỉ</span>
                       </Badge>
                     </div>
                     <div className="absolute bottom-4 left-4">
-                      <div className="w-12 h-12 bg-white dark:bg-[#1a1a1a] rounded-xl flex items-center justify-center border border-[#e5e7e7] dark:border-[#333]">
+                      <div className={cn(
+                        "w-12 h-12 bg-white dark:bg-[#1a1a1a] flex items-center justify-center",
+                        neoBrutalismMode 
+                          ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                          : "rounded-xl border border-[#e5e7e7] dark:border-[#333]"
+                      )}>
                         <BookOpen className="w-6 h-6 text-[#211c37] dark:text-white" />
                       </div>
                     </div>
@@ -128,10 +164,17 @@ export default function CourseListPage() {
                   {/* Content */}
                   <div className="p-6 space-y-4 flex-1 flex flex-col">
                     <div>
-                      <h3 className="text-xl font-bold text-[#211c37] dark:text-white mb-2 line-clamp-2 group-hover:text-[#3bafa8] dark:group-hover:text-[#3bafa8] transition-colors">
+                      <h3 className={cn(
+                        "text-xl font-bold text-[#211c37] dark:text-white mb-2 line-clamp-2 transition-colors",
+                        !neoBrutalismMode && "group-hover:text-[#3bafa8] dark:group-hover:text-[#3bafa8]",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                      )}>
                         {course.Name}
                       </h3>
-                      <p className="text-sm text-[#85878d] dark:text-gray-400">
+                      <p className={cn(
+                        "text-sm text-[#85878d] dark:text-gray-400",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
                         Mã khóa học: {course.Course_ID}
                       </p>
                     </div>
@@ -160,9 +203,15 @@ export default function CourseListPage() {
                         <span className="text-[#85878d] dark:text-gray-400">Tiến độ</span>
                         <span className="font-semibold text-[#211c37] dark:text-white">0%</span>
                       </div>
-                      <div className="h-2 bg-[#eff1f3] dark:bg-[#333] rounded-full overflow-hidden">
+                      <div className={cn(
+                        "h-2 bg-[#eff1f3] dark:bg-[#333] overflow-hidden",
+                        neoBrutalismMode ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : "rounded-full"
+                      )}>
                         <div 
-                          className="h-full bg-gradient-to-r from-[#3bafa8] to-[#45a8a3] rounded-full transition-all duration-500"
+                          className={cn(
+                            "h-full bg-gradient-to-r from-[#3bafa8] to-[#45a8a3] transition-all duration-500",
+                            neoBrutalismMode ? "rounded-none" : "rounded-full"
+                          )}
                           style={{ width: '0%' }}
                         ></div>
                       </div>
@@ -174,12 +223,20 @@ export default function CourseListPage() {
                         e.stopPropagation()
                         navigate(ROUTES.COURSE_DETAIL.replace(':courseId', course.Course_ID.toString()))
                       }}
-                      className="w-full bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 rounded-xl h-11 group/btn"
+                      className={cn(
+                        "w-full h-11 group/btn",
+                        neoBrutalismMode 
+                          ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'primary', "hover:bg-gray-800 dark:hover:bg-gray-200")
+                          : "bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 rounded-xl"
+                      )}
                     >
                       <span className="flex items-center justify-center gap-2">
                         <PlayCircle className="w-4 h-4" />
-                        Xem chi tiết
-                        <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                        <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>Xem chi tiết</span>
+                        <ArrowRight className={cn(
+                          "w-4 h-4 transition-transform",
+                          !neoBrutalismMode && "group-hover/btn:translate-x-1"
+                        )} />
                       </span>
                     </Button>
                   </div>
@@ -188,13 +245,19 @@ export default function CourseListPage() {
             })}
           </div>
         ) : (
-          <Card className="border border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#1a1a1a] rounded-2xl">
+          <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
             <div className="py-16 text-center">
               <BookOpen className="w-16 h-16 mx-auto mb-4 text-[#85878d] dark:text-gray-400" />
-              <p className="text-lg font-semibold text-[#211c37] dark:text-white mb-2">
+              <p className={cn(
+                "text-lg font-semibold text-[#211c37] dark:text-white mb-2",
+                getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+              )}>
                 {searchQuery ? 'Không tìm thấy khóa học' : 'Chưa có khóa học nào'}
               </p>
-              <p className="text-sm text-[#85878d] dark:text-gray-400">
+              <p className={cn(
+                "text-sm text-[#85878d] dark:text-gray-400",
+                getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+              )}>
                 {searchQuery 
                   ? 'Thử tìm kiếm với từ khóa khác' 
                   : 'Các khóa học sẽ xuất hiện ở đây khi bạn đăng ký'}

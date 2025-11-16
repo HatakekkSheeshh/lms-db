@@ -33,4 +33,7 @@ export const ROUTES = {
   // Profile
   PROFILE: '/profile',
   SETTINGS: '/settings',
+  
+  // Admin
+  USERS_MANAGEMENT: '/admin/users',
 } as const

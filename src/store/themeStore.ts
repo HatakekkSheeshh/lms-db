@@ -5,10 +5,13 @@ interface ThemeState {
   primaryColor: string
   fontFamily: string
   darkMode: boolean
+  neoBrutalismMode: boolean
   setPrimaryColor: (color: string) => void
   setFontFamily: (font: string) => void
   setDarkMode: (dark: boolean) => void
   toggleDarkMode: () => void
+  setNeoBrutalismMode: (enabled: boolean) => void
+  toggleNeoBrutalismMode: () => void
   resetTheme: () => void
 }
 
@@ -16,6 +19,7 @@ const defaultTheme = {
   primaryColor: '222.2 47.4% 11.2%',
   fontFamily: "'Inter', system-ui, sans-serif",
   darkMode: false,
+  neoBrutalismMode: false,
 }
 
 export const useThemeStore = create<ThemeState>()(
@@ -26,6 +30,8 @@ export const useThemeStore = create<ThemeState>()(
       setFontFamily: (font: string) => set({ fontFamily: font }),
       setDarkMode: (dark: boolean) => set({ darkMode: dark }),
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
+      setNeoBrutalismMode: (enabled: boolean) => set({ neoBrutalismMode: enabled }),
+      toggleNeoBrutalismMode: () => set((state) => ({ neoBrutalismMode: !state.neoBrutalismMode })),
       resetTheme: () => set(defaultTheme),
     }),
     {

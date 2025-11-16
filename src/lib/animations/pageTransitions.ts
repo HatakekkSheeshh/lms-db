@@ -18,7 +18,7 @@ export const pageTransition = {
     })
   },
 
-  staggerChildren: (container: HTMLElement, children: HTMLElement[]) => {
+  staggerChildren: (_container: HTMLElement, children: HTMLElement[]) => {
     return gsap.from(children, {
       y: 30,
       opacity: 0,

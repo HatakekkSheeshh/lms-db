@@ -21,6 +21,7 @@ import GradeOverviewPage from './pages/grades/GradeOverviewPage'
 import GradeDetailPage from './pages/grades/GradeDetailPage'
 import SchedulePage from './pages/schedule/SchedulePage'
 import SectionPage from './pages/courses/SectionPage'
+import UserManagementPage from './pages/admin/UserManagementPage'
 import ErrorBoundary from './components/common/ErrorBoundary'
 
 function App() {
@@ -180,6 +181,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['student', 'tutor', 'admin']}>
                 <SectionPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path={ROUTES.USERS_MANAGEMENT}
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <UserManagementPage />
               </ProtectedRoute>
             }
           />

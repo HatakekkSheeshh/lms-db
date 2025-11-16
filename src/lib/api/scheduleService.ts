@@ -11,7 +11,7 @@ export interface ScheduleItem {
 }
 
 export const scheduleService = {
-  async getSchedule(userId: number): Promise<ScheduleItem[]> {
+  async getSchedule(_userId: number): Promise<ScheduleItem[]> {
     await delay(500)
     // Mock schedule data
     return [

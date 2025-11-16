@@ -1,4 +1,5 @@
-import { Component, ReactNode } from 'react'
+import { Component } from 'react'
+import type { ReactNode } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-react'

@@ -1,12 +1,14 @@
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext } from 'react'
+import type { ReactNode } from 'react'
 import { useAuthStore } from '@/store/authStore'
+import type { User, UserRole } from '@/types'
 
 interface AuthContextType {
-  user: ReturnType<typeof useAuthStore>['user']
-  isAuthenticated: ReturnType<typeof useAuthStore>['isAuthenticated']
-  role: ReturnType<typeof useAuthStore>['role']
-  login: ReturnType<typeof useAuthStore>['login']
-  logout: ReturnType<typeof useAuthStore>['logout']
+  user: User | null
+  isAuthenticated: boolean
+  role: UserRole | null
+  login: (user: User, role: UserRole) => void
+  logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
