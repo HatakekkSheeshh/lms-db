@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +10,7 @@ import { ROUTES } from '@/constants/routes'
 import { ArrowLeft, Users } from 'lucide-react'
 
 export default function SectionPage() {
+  const { t } = useTranslation()
   const { courseId, sectionId } = useParams<{ courseId: string; sectionId: string }>()
   const navigate = useNavigate()
   const [section, setSection] = useState<Section | null>(null)
@@ -41,7 +43,7 @@ export default function SectionPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Đang tải...</div>
+          <div className="text-lg">{t('common.loading')}</div>
         </div>
       </DashboardLayout>
     )
@@ -50,7 +52,7 @@ export default function SectionPage() {
   if (!section || !course) {
     return (
       <DashboardLayout>
-        <div className="text-[#85878d]">Section not found</div>
+        <div className="text-[#85878d]">{t('courses.sectionNotFound')}</div>
       </DashboardLayout>
     )
   }
@@ -67,7 +69,7 @@ export default function SectionPage() {
           className="mb-4 border border-[#e5e7e7] hover:bg-gray-50"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Course
+          {t('courses.backToCourse')}
         </Button>
 
         <Card className="border border-[#e5e7e7] rounded-xl">
@@ -80,7 +82,7 @@ export default function SectionPage() {
                 <CardTitle className="text-2xl text-[#1f1d39]">
                   Section {section.Section_ID} - {course.Name}
                 </CardTitle>
-                <CardDescription className="text-[#85878d]">Section Details</CardDescription>
+                <CardDescription className="text-[#85878d]">{t('courses.sectionDetails')}</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -88,25 +90,25 @@ export default function SectionPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="flex items-center gap-3 p-4 bg-[#f5f7f9] rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-[#676767] mb-1">Section ID</p>
+                  <p className="text-sm font-medium text-[#676767] mb-1">{t('courses.sectionId')}</p>
                   <p className="text-lg font-semibold text-[#1f1d39]">{section.Section_ID}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-4 bg-[#f5f7f9] rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-[#676767] mb-1">Semester</p>
+                  <p className="text-sm font-medium text-[#676767] mb-1">{t('courses.semester')}</p>
                   <p className="text-lg font-semibold text-[#1f1d39]">{section.Semester}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-4 bg-[#f5f7f9] rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-[#676767] mb-1">Course ID</p>
+                  <p className="text-sm font-medium text-[#676767] mb-1">{t('courses.courseId')}</p>
                   <p className="text-lg font-semibold text-[#1f1d39]">{course.Course_ID}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-4 bg-[#f5f7f9] rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-[#676767] mb-1">Course Name</p>
+                  <p className="text-sm font-medium text-[#676767] mb-1">{t('courses.courseName')}</p>
                   <p className="text-lg font-semibold text-[#1f1d39]">{course.Name}</p>
                 </div>
               </div>
