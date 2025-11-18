@@ -11,9 +11,11 @@ try:
     cursor.execute('SELECT @@VERSION as version')
     result = cursor.fetchone()
 
-    print('\n✅ Connection successful!')
-    print('\nSQL Server Version:')
-    print(result.version)
+    print('✅ Connection successful!')
+    print('SQL Server Version:')
+    
+    for i in result[0].split('\n'):
+        print(i)
 
     # Try to check database
     cursor.execute("""
@@ -25,9 +27,9 @@ try:
     database = cursor.fetchone()
 
     if database:
-        print('\n✅ Database "lms_system" found!')
+        print('✅ Database "lms_system" found!')
     else:
-        print('\n⚠️  Database "lms_system" not found!')
+        print('⚠️  Database "lms_system" not found!')
 
     conn.close()
     print('\n✅ Connection test completed successfully')
