@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,6 +10,7 @@ import { ROUTES } from '@/constants/routes'
 import { ArrowLeft, CheckCircle2, XCircle, Trophy } from 'lucide-react'
 
 export default function QuizResultPage() {
+  const { t } = useTranslation()
   const { quizId } = useParams<{ quizId: string }>()
   const navigate = useNavigate()
   const [quiz, setQuiz] = useState<any>(null)
@@ -39,7 +41,7 @@ export default function QuizResultPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Đang tải...</div>
+          <div className="text-lg">{t('quizResult.loading')}</div>
         </div>
       </DashboardLayout>
     )
@@ -48,7 +50,7 @@ export default function QuizResultPage() {
   if (!quiz) {
     return (
       <DashboardLayout>
-        <div className="text-[#85878d]">Quiz result not found</div>
+        <div className="text-[#85878d]">{t('errors.quizResultNotFound')}</div>
       </DashboardLayout>
     )
   }
@@ -58,8 +60,8 @@ export default function QuizResultPage() {
 
   return (
     <DashboardLayout 
-      title={`Quiz ${quiz.Assessment_ID} Result`}
-      subtitle="View your quiz result"
+      title={`Quiz ${quiz.Assessment_ID} ${t('quizResult.title')}`}
+      subtitle={t('quizResult.subtitle')}
     >
       <div className="space-y-6 max-w-2xl mx-auto">
         <Button
@@ -68,7 +70,7 @@ export default function QuizResultPage() {
           className="mb-4 border border-[#e5e7e7] hover:bg-gray-50"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Quizzes
+          {t('quizResult.backToQuizzes')}
         </Button>
 
         <Card className="border border-[#e5e7e7] rounded-xl">
@@ -81,9 +83,9 @@ export default function QuizResultPage() {
               )}
             </div>
             <CardTitle className="text-2xl text-[#1f1d39]">
-              {passed ? 'Congratulations! You Passed!' : 'Not Passed'}
+              {passed ? t('quizResult.congratulations') : t('quizResult.notPassed')}
             </CardTitle>
-            <CardDescription className="text-[#85878d]">Quiz {quiz.Assessment_ID} Result</CardDescription>
+            <CardDescription className="text-[#85878d]">Quiz {quiz.Assessment_ID} {t('quizResult.title')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center space-y-2">
@@ -93,24 +95,24 @@ export default function QuizResultPage() {
                 <span className="text-2xl text-[#85878d]">/ {quiz.pass_score}</span>
               </div>
               <p className="text-lg text-[#676767]">
-                Achieved {percentage}% requirement
+                {t('quizResult.achieved')} {percentage}% {t('quizResult.requirement')}
               </p>
               <Badge className={`text-lg px-4 py-1 ${passed ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-                {passed ? 'Passed' : 'Failed'}
+                {passed ? t('quizResult.passed') : t('quizResult.failed')}
               </Badge>
             </div>
 
             <div className="space-y-4 pt-4 border-t border-[#e5e7e7]">
               <div className="flex justify-between">
-                <span className="text-[#85878d]">Passing Score:</span>
-                <span className="font-semibold text-[#1f1d39]">{quiz.pass_score} points</span>
+                <span className="text-[#85878d]">{t('quizResult.passingScore')}:</span>
+                <span className="font-semibold text-[#1f1d39]">{quiz.pass_score} {t('assignmentDetail.points')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#85878d]">Grading Method:</span>
+                <span className="text-[#85878d]">{t('quizResult.gradingMethod')}:</span>
                 <span className="font-semibold text-[#1f1d39]">{quiz.Grading_method}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#85878d]">Status:</span>
+                <span className="text-[#85878d]">{t('quizResult.status')}:</span>
                 <span className="font-semibold text-[#1f1d39] capitalize">{quiz.completion_status}</span>
               </div>
             </div>
@@ -119,7 +121,7 @@ export default function QuizResultPage() {
               onClick={() => navigate(ROUTES.QUIZZES)}
               className="w-full bg-black hover:bg-gray-800 text-white"
             >
-              View Quiz List
+              {t('quizResult.viewQuizList')}
             </Button>
           </CardContent>
         </Card>

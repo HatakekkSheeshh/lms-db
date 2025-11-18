@@ -1,5 +1,7 @@
 import { Component } from 'react'
 import type { ReactNode } from 'react'
+import { withTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-react'
@@ -7,6 +9,7 @@ import { AlertCircle } from 'lucide-react'
 interface Props {
   children: ReactNode
   fallback?: ReactNode
+  t: TFunction
 }
 
 interface State {
@@ -14,7 +17,7 @@ interface State {
   error?: Error
 }
 
-export default class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
     this.state = { hasError: false }
@@ -29,6 +32,8 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   render() {
+    const { t } = this.props
+    
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback
@@ -40,10 +45,10 @@ export default class ErrorBoundary extends Component<Props, State> {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-destructive" />
-                <CardTitle>Đã xảy ra lỗi</CardTitle>
+                <CardTitle>{t('errors.errorOccurred')}</CardTitle>
               </div>
               <CardDescription>
-                {this.state.error?.message || 'Có lỗi không mong muốn xảy ra'}
+                {this.state.error?.message || t('errors.unexpectedError')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -54,7 +59,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 }}
                 className="w-full"
               >
-                Tải lại trang
+                {t('errors.reloadPage')}
               </Button>
             </CardContent>
           </Card>
@@ -65,4 +70,6 @@ export default class ErrorBoundary extends Component<Props, State> {
     return this.props.children
   }
 }
+
+export default withTranslation()(ErrorBoundary)
 

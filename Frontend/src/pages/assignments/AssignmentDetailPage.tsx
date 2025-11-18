@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import { ROUTES } from '@/constants/routes'
 import { ArrowLeft, FileText, Calendar, Clock, Upload } from 'lucide-react'
 
 export default function AssignmentDetailPage() {
+  const { t } = useTranslation()
   const { assignmentId } = useParams<{ assignmentId: string }>()
   const navigate = useNavigate()
   const [assignment, setAssignment] = useState<Assignment | null>(null)
@@ -36,7 +38,7 @@ export default function AssignmentDetailPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Đang tải...</div>
+          <div className="text-lg">{t('assignmentDetail.loading')}</div>
         </div>
       </DashboardLayout>
     )
@@ -45,7 +47,7 @@ export default function AssignmentDetailPage() {
   if (!assignment) {
     return (
       <DashboardLayout>
-        <div className="text-[#85878d]">Assignment not found</div>
+        <div className="text-[#85878d]">{t('errors.assignmentNotFound')}</div>
       </DashboardLayout>
     )
   }
@@ -57,7 +59,7 @@ export default function AssignmentDetailPage() {
   return (
     <DashboardLayout 
       title={`Assignment ${assignment.Assessment_ID}`}
-      subtitle="Assignment details"
+      subtitle={t('assignmentDetail.title')}
     >
       <div className="space-y-6">
         <Button
@@ -66,7 +68,7 @@ export default function AssignmentDetailPage() {
           className="mb-4 border border-[#e5e7e7] hover:bg-gray-50"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Assignments
+          {t('assignmentDetail.backToAssignments')}
         </Button>
 
         <Card className="border border-[#e5e7e7] rounded-xl">
@@ -82,16 +84,16 @@ export default function AssignmentDetailPage() {
                 </div>
               </div>
               {isOverdue ? (
-                <Badge className="bg-red-500 text-white">Overdue</Badge>
+                <Badge className="bg-red-500 text-white">{t('assignmentDetail.overdue')}</Badge>
               ) : (
-                <Badge className="bg-green-500 text-white">On Time</Badge>
+                <Badge className="bg-green-500 text-white">{t('assignmentDetail.onTime')}</Badge>
               )}
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {assignment.instructions && (
               <div className="p-4 bg-[#f5f7f9] rounded-lg">
-                <h3 className="text-lg font-semibold text-[#1f1d39] mb-2">Instructions</h3>
+                <h3 className="text-lg font-semibold text-[#1f1d39] mb-2">{t('assignmentDetail.instructions')}</h3>
                 <p className="text-[#676767]">{assignment.instructions}</p>
               </div>
             )}
@@ -100,7 +102,7 @@ export default function AssignmentDetailPage() {
               <div className="flex items-center gap-3 p-4 bg-[#f5f7f9] rounded-lg">
                 <Calendar className="h-5 w-5 text-[#85878d]" />
                 <div>
-                  <p className="text-sm font-medium text-[#676767] mb-1">Deadline</p>
+                  <p className="text-sm font-medium text-[#676767] mb-1">{t('assignmentDetail.deadline')}</p>
                   <p className="text-sm font-semibold text-[#1f1d39]">
                     {deadline.toLocaleString('vi-VN')}
                   </p>
@@ -110,8 +112,8 @@ export default function AssignmentDetailPage() {
               <div className="flex items-center gap-3 p-4 bg-[#f5f7f9] rounded-lg">
                 <Clock className="h-5 w-5 text-[#85878d]" />
                 <div>
-                  <p className="text-sm font-medium text-[#676767] mb-1">Max Score</p>
-                  <p className="text-sm font-semibold text-[#1f1d39]">{assignment.MaxScore} points</p>
+                  <p className="text-sm font-medium text-[#676767] mb-1">{t('assignmentDetail.maxScore')}</p>
+                  <p className="text-sm font-semibold text-[#1f1d39]">{assignment.MaxScore} {t('assignmentDetail.points')}</p>
                 </div>
               </div>
 
@@ -119,7 +121,7 @@ export default function AssignmentDetailPage() {
                 <div className="flex items-center gap-3 p-4 bg-[#f5f7f9] rounded-lg">
                   <Upload className="h-5 w-5 text-[#85878d]" />
                   <div>
-                    <p className="text-sm font-medium text-[#676767] mb-1">Accepted Format</p>
+                    <p className="text-sm font-medium text-[#676767] mb-1">{t('assignmentDetail.acceptedFormat')}</p>
                     <p className="text-sm font-semibold text-[#1f1d39]">
                       {assignment.accepted_specification}
                     </p>
@@ -133,7 +135,7 @@ export default function AssignmentDetailPage() {
               className="w-full md:w-auto bg-black hover:bg-gray-800 text-white"
             >
               <Upload className="mr-2 h-4 w-4" />
-              Submit Assignment
+              {t('assignmentDetail.submitAssignment')}
             </Button>
           </CardContent>
         </Card>

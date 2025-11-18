@@ -1,4 +1,10 @@
+import sys
+import io
 from config.database import get_db_connection
+
+# Fix encoding for Windows console
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 print('Testing SQL Server connection with Python...')
 print('=' * 50)
@@ -11,9 +17,9 @@ try:
     cursor.execute('SELECT @@VERSION as version')
     result = cursor.fetchone()
 
-    print('\n✅ Connection successful!')
+    print('\n[OK] Connection successful!')
     print('\nSQL Server Version:')
-    print(result.version)
+    print(result[0] if result else 'N/A')
 
     # Try to check database
     cursor.execute("""
@@ -25,15 +31,15 @@ try:
     database = cursor.fetchone()
 
     if database:
-        print('\n✅ Database "lms_system" found!')
+        print('\n[OK] Database "lms_system" found!')
     else:
-        print('\n⚠️  Database "lms_system" not found!')
+        print('\n[WARNING] Database "lms_system" not found!')
 
     conn.close()
-    print('\n✅ Connection test completed successfully')
+    print('\n[OK] Connection test completed successfully')
 
 except Exception as e:
-    print(f'\n❌ Connection failed!')
+    print(f'\n[ERROR] Connection failed!')
     print(f'Error details: {e}')
     print('\nPlease check:')
     print('1. SQL Server is running')

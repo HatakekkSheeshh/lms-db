@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -73,6 +74,7 @@ export default function ContentEditorDialog({
   initialContent,
   onSave,
 }: ContentEditorDialogProps) {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<ContentType>(defaultContentType)
   
   // Announcement state
@@ -196,7 +198,7 @@ export default function ContentEditorDialog({
       if (file.type === 'application/pdf') {
         setPdfFile(file)
       } else {
-        alert('Please select a PDF file')
+        alert(t('errors.selectPdfFile'))
       }
     }
   }
@@ -211,7 +213,7 @@ export default function ContentEditorDialog({
 
     if (activeTab === 'announcement') {
       if (!announcementTitle.trim() || !announcementContent.trim()) {
-        alert('Please fill in title and content')
+        alert(t('errors.fillTitleAndContent'))
         return
       }
       contentItem.title = announcementTitle.trim()
@@ -219,7 +221,7 @@ export default function ContentEditorDialog({
       contentItem.links = links
     } else if (activeTab === 'quiz') {
       if (questions.length === 0) {
-        alert('Please add at least one question')
+        alert(t('errors.addAtLeastOneQuestion'))
         return
       }
       // Validate all questions have question text and at least 2 answers with correct answer selected
@@ -231,7 +233,7 @@ export default function ContentEditorDialog({
                !q.answers[q.correctAnswer]?.trim()
       })
       if (invalidQuestions.length > 0) {
-        alert('Please complete all questions with at least 2 answers and select a correct answer')
+        alert(t('errors.completeAllQuestions'))
         return
       }
       contentItem.title = 'Quiz'
@@ -245,7 +247,7 @@ export default function ContentEditorDialog({
       }
     } else if (activeTab === 'pdf') {
       if (!pdfFile) {
-        alert('Please select a PDF file')
+        alert(t('errors.selectPdfFile'))
         return
       }
       contentItem.title = pdfFile.name
@@ -256,12 +258,12 @@ export default function ContentEditorDialog({
       }
     } else if (activeTab === 'assignment') {
       if (!assignmentTitle.trim() || !deadline || !maxScore) {
-        alert('Please fill in all required fields (Title, Deadline, Max Score)')
+        alert(t('errors.fillRequiredFields'))
         return
       }
       // Validate deadline is in the future
       if (deadline <= new Date()) {
-        alert('Deadline must be in the future')
+        alert(t('errors.deadlineMustBeFuture'))
         return
       }
       contentItem.title = assignmentTitle.trim()
@@ -297,10 +299,10 @@ export default function ContentEditorDialog({
       <DialogContent className="bg-white dark:bg-[#1a1a1a] border-[#e5e7e7] dark:border-[#333] max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[#211c37] dark:text-white">
-            {initialContent ? 'Edit' : 'Add'} Content - {sectionTitle}
+            {initialContent ? t('contentEditor.edit') : t('contentEditor.add')} {t('contentEditor.content')} - {sectionTitle}
           </DialogTitle>
           <DialogDescription className="text-gray-600 dark:text-gray-400">
-            Choose the type of content you want to add to this section
+            {t('contentEditor.chooseContentType')}
           </DialogDescription>
         </DialogHeader>
 
@@ -308,68 +310,68 @@ export default function ContentEditorDialog({
           <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-[#2a2a2a]">
             <TabsTrigger value="announcement" className="data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1a1a]">
               <Bell className="h-4 w-4 mr-2" />
-              Announcement
+              {t('contentEditor.announcement')}
             </TabsTrigger>
             <TabsTrigger value="quiz" className="data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1a1a]">
               <HelpCircle className="h-4 w-4 mr-2" />
-              Quiz
+              {t('contentEditor.quiz')}
             </TabsTrigger>
             <TabsTrigger value="pdf" className="data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1a1a]">
               <FileText className="h-4 w-4 mr-2" />
-              PDF
+              {t('contentEditor.pdf')}
             </TabsTrigger>
             <TabsTrigger value="assignment" className="data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1a1a]">
               <ClipboardList className="h-4 w-4 mr-2" />
-              Assignment
+              {t('contentEditor.assignment')}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="announcement" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="announcement-title" className="text-[#211c37] dark:text-white">
-                Title *
+                {t('contentEditor.title')} *
               </Label>
               <Input
                 id="announcement-title"
                 value={announcementTitle}
                 onChange={(e) => setAnnouncementTitle(e.target.value)}
-                placeholder="Enter announcement title"
+                placeholder={t('contentEditor.title')}
                 className="border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="announcement-content" className="text-[#211c37] dark:text-white">
-                Content *
+                {t('contentEditor.content')} *
               </Label>
               <Textarea
                 id="announcement-content"
                 value={announcementContent}
                 onChange={(e) => setAnnouncementContent(e.target.value)}
-                placeholder="Enter announcement content..."
+                placeholder={t('contentEditor.contentPlaceholder')}
                 className="min-h-[200px] border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white resize-none"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[#211c37] dark:text-white">Links</Label>
+              <Label className="text-[#211c37] dark:text-white">{t('contentEditor.links')}</Label>
               <div className="flex gap-2">
                 <Input
                   value={linkLabel}
                   onChange={(e) => setLinkLabel(e.target.value)}
-                  placeholder="Link label"
+                  placeholder={t('contentEditor.linkLabel')}
                   className="flex-1 border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white"
                 />
                 <Input
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="https://..."
+                  placeholder={t('contentEditor.linkUrl')}
                   type="url"
                   className="flex-1 border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white"
                 />
                 <Button type="button" onClick={handleAddLink} size="sm" variant="outline">
                   <LinkIcon className="h-4 w-4 mr-1" />
-                  Add
+                  {t('contentEditor.addLink')}
                 </Button>
               </div>
               {links.length > 0 && (
@@ -402,7 +404,7 @@ export default function ContentEditorDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="pass-score" className="text-[#211c37] dark:text-white">
-                  Pass Score (0-10)
+                  {t('contentEditor.passScore')}
                 </Label>
                 <Input
                   id="pass-score"
@@ -417,7 +419,7 @@ export default function ContentEditorDialog({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="time-limit" className="text-[#211c37] dark:text-white">
-                  Time Limit (HH:mm:ss)
+                  {t('contentEditor.timeLimit')}
                 </Label>
                 <Input
                   id="time-limit"
@@ -431,17 +433,17 @@ export default function ContentEditorDialog({
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label className="text-[#211c37] dark:text-white">Questions</Label>
+                <Label className="text-[#211c37] dark:text-white">{t('contentEditor.questions')}</Label>
                 <Button type="button" onClick={handleAddQuestion} size="sm" variant="outline">
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Question
+                  {t('contentEditor.addQuestion')}
                 </Button>
               </div>
 
               {questions.map((question, qIndex) => (
                 <div key={question.id} className="p-4 border border-[#e5e7e7] dark:border-[#333] rounded-lg bg-gray-50 dark:bg-[#2a2a2a] space-y-3">
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline">Question {qIndex + 1}</Badge>
+                    <Badge variant="outline">{t('contentEditor.question')} {qIndex + 1}</Badge>
                     <Button
                       type="button"
                       variant="ghost"
@@ -453,16 +455,16 @@ export default function ContentEditorDialog({
                     </Button>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[#211c37] dark:text-white">Question</Label>
+                    <Label className="text-[#211c37] dark:text-white">{t('contentEditor.question')}</Label>
                     <Input
                       value={question.question}
                       onChange={(e) => handleUpdateQuestion(question.id, 'question', e.target.value)}
-                      placeholder="Enter question..."
+                      placeholder={t('contentEditor.question')}
                       className="border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#1a1a1a] text-[#211c37] dark:text-white"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[#211c37] dark:text-white">Answers</Label>
+                    <Label className="text-[#211c37] dark:text-white">{t('contentEditor.answers')}</Label>
                     {question.answers.map((answer, aIndex) => (
                       <div key={aIndex} className="flex items-center gap-2">
                         <input
@@ -479,7 +481,7 @@ export default function ContentEditorDialog({
                             newAnswers[aIndex] = e.target.value
                             handleUpdateQuestion(question.id, 'answers', newAnswers)
                           }}
-                          placeholder={`Answer ${aIndex + 1}`}
+                          placeholder={`${t('contentEditor.answer')} ${aIndex + 1}`}
                           className="flex-1 border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#1a1a1a] text-[#211c37] dark:text-white"
                         />
                       </div>
@@ -491,7 +493,7 @@ export default function ContentEditorDialog({
               {questions.length === 0 && (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <HelpCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No questions added yet</p>
+                  <p>{t('contentEditor.noQuestions')}</p>
                 </div>
               )}
             </div>
@@ -500,7 +502,7 @@ export default function ContentEditorDialog({
           <TabsContent value="pdf" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="pdf-file" className="text-[#211c37] dark:text-white">
-                Upload PDF Document
+                {t('contentEditor.uploadPdf')}
               </Label>
               <div className="border-2 border-dashed border-[#e5e7e7] dark:border-[#333] rounded-lg p-6 text-center">
                 <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
@@ -529,13 +531,13 @@ export default function ContentEditorDialog({
           <TabsContent value="assignment" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="assignment-title" className="text-[#211c37] dark:text-white">
-                Assignment Title *
+                {t('contentEditor.assignmentTitle')} *
               </Label>
               <Input
                 id="assignment-title"
                 value={assignmentTitle}
                 onChange={(e) => setAssignmentTitle(e.target.value)}
-                placeholder="Enter assignment title"
+                placeholder={t('contentEditor.assignmentTitle')}
                 className="border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white"
               />
             </div>
@@ -543,7 +545,7 @@ export default function ContentEditorDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="max-score" className="text-[#211c37] dark:text-white">
-                  Max Score *
+                  {t('contentEditor.maxScore')} *
                 </Label>
                 <Input
                   id="max-score"
@@ -556,12 +558,12 @@ export default function ContentEditorDialog({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="deadline" className="text-[#211c37] dark:text-white">
-                  Deadline *
+                  {t('contentEditor.deadline')} *
                 </Label>
                 <DateTimePicker
                   date={deadline}
                   onDateChange={setDeadline}
-                  placeholder="Select deadline"
+                  placeholder={t('contentEditor.selectDeadline')}
                   minDate={new Date()}
                   className="border-[#e5e7e7] dark:border-[#333]"
                 />
@@ -570,33 +572,33 @@ export default function ContentEditorDialog({
 
             <div className="space-y-2">
               <Label htmlFor="accepted-format" className="text-[#211c37] dark:text-white">
-                Accepted File Format
+                {t('contentEditor.acceptedFormat')}
               </Label>
               <Input
                 id="accepted-format"
                 value={acceptedFormat}
                 onChange={(e) => setAcceptedFormat(e.target.value)}
-                placeholder="e.g., pdf, doc, docx"
+                placeholder={t('contentEditor.formatExample')}
                 className="border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="instructions" className="text-[#211c37] dark:text-white">
-                Instructions
+                {t('contentEditor.instructions')}
               </Label>
               <Textarea
                 id="instructions"
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
-                placeholder="Enter assignment instructions..."
+                placeholder={t('contentEditor.instructionsPlaceholder')}
                 className="min-h-[150px] border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white resize-none"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="assignment-file" className="text-[#211c37] dark:text-white">
-                Đề bài (File đính kèm)
+                {t('contentEditor.assignmentFile')}
               </Label>
               <div className="flex flex-col gap-2">
                 {initialContent?.type === 'assignment' && initialContent.assignment?.attachment && !assignmentFile && (
@@ -618,7 +620,7 @@ export default function ContentEditorDialog({
                       rel="noopener noreferrer"
                       className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                     >
-                      Xem
+                      {t('contentEditor.view')}
                     </a>
                   </div>
                 )}
@@ -640,7 +642,7 @@ export default function ContentEditorDialog({
                   >
                     <Upload className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                     <span className="text-sm text-[#211c37] dark:text-white">
-                      {assignmentFile ? assignmentFile.name : 'Chọn file đề bài'}
+                      {assignmentFile ? assignmentFile.name : t('contentEditor.selectAssignmentFile')}
                     </span>
                   </label>
                 </div>
@@ -672,13 +674,13 @@ export default function ContentEditorDialog({
             onClick={() => onOpenChange(false)}
             className="border-[#e5e7e7] dark:border-[#333]"
           >
-            Cancel
+            {t('contentEditor.cancel')}
           </Button>
           <Button
             onClick={handleSave}
             className="bg-[#3bafa8] hover:bg-[#2a8d87] text-white"
           >
-            {initialContent ? 'Update' : 'Add'} Content
+            {initialContent ? t('contentEditor.update') : t('contentEditor.addContent')}
           </Button>
         </DialogFooter>
       </DialogContent>

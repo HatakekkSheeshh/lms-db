@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ export default function AssignmentSubmitDialog({
   onSubmit,
   existingSubmission,
 }: AssignmentSubmitDialogProps) {
+  const { t } = useTranslation()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -44,7 +46,7 @@ export default function AssignmentSubmitDialog({
 
   const handleSubmit = async () => {
     if (!selectedFile && !existingSubmission) {
-      alert('Vui lòng chọn file để nộp bài')
+      alert(t('errors.selectFile'))
       return
     }
 
@@ -56,7 +58,7 @@ export default function AssignmentSubmitDialog({
         onOpenChange(false)
       } catch (error) {
         console.error('Error submitting assignment:', error)
-        alert('Có lỗi xảy ra khi nộp bài. Vui lòng thử lại.')
+        alert(t('errors.submissionFailed'))
       } finally {
         setIsSubmitting(false)
       }
@@ -73,7 +75,7 @@ export default function AssignmentSubmitDialog({
             {assignment.title || 'Assignment'}
           </DialogTitle>
           <DialogDescription className="text-gray-600 dark:text-gray-400">
-            {assignment.assignment.instructions || 'Nộp bài assignment của bạn'}
+            {assignment.assignment.instructions || t('assignmentDialog.submitAssignment')}
           </DialogDescription>
         </DialogHeader>
 
@@ -81,19 +83,19 @@ export default function AssignmentSubmitDialog({
           {/* Assignment Details */}
           <div className="space-y-3 p-4 bg-[#f5f7f9] dark:bg-[#2a2a2a] rounded-lg">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#211c37] dark:text-white">Max Score:</span>
+              <span className="text-sm font-medium text-[#211c37] dark:text-white">{t('assignmentDialog.maxScore')}:</span>
               <span className="text-sm text-gray-600 dark:text-gray-400">{assignment.assignment.maxScore}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#211c37] dark:text-white">Deadline:</span>
+              <span className="text-sm font-medium text-[#211c37] dark:text-white">{t('assignmentDialog.deadline')}:</span>
               <span className={`text-sm font-medium ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                 {format(deadline, 'dd/MM/yyyy HH:mm')}
-                {isOverdue && ' (Đã hết hạn)'}
+                {isOverdue && ` ${t('assignmentDialog.expired')}`}
               </span>
             </div>
             {assignment.assignment.acceptedFormat && (
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-[#211c37] dark:text-white">Format được chấp nhận:</span>
+                <span className="text-sm font-medium text-[#211c37] dark:text-white">{t('assignmentDialog.acceptedFormat')}:</span>
                 <span className="text-sm text-gray-600 dark:text-gray-400">{assignment.assignment.acceptedFormat}</span>
               </div>
             )}
@@ -103,7 +105,7 @@ export default function AssignmentSubmitDialog({
           {assignment.assignment.attachment && (
             <div className="p-4 border border-[#e5e7e7] dark:border-[#333] rounded-lg bg-blue-50 dark:bg-blue-900/20">
               <Label className="text-sm font-medium text-[#211c37] dark:text-white mb-2 block">
-                Đề bài:
+                {t('assignmentDialog.assignmentFile')}:
               </Label>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -118,7 +120,7 @@ export default function AssignmentSubmitDialog({
                   onClick={() => window.open(assignment.assignment?.attachment?.fileUrl, '_blank')}
                   className="border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300"
                 >
-                  Tải xuống
+                  {t('assignmentDialog.download')}
                 </Button>
               </div>
             </div>
@@ -130,7 +132,7 @@ export default function AssignmentSubmitDialog({
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <Label className="text-sm font-medium text-green-700 dark:text-green-300">
-                  Đã nộp bài:
+                  {t('assignmentDialog.submitted')}:
                 </Label>
               </div>
               <div className="space-y-2">
@@ -142,11 +144,11 @@ export default function AssignmentSubmitDialog({
                     onClick={() => window.open(existingSubmission.fileUrl, '_blank')}
                     className="text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30"
                   >
-                    Xem
+                    {t('assignmentDialog.view')}
                   </Button>
                 </div>
                 <p className="text-xs text-green-600 dark:text-green-400">
-                  Nộp lúc: {format(new Date(existingSubmission.submittedAt), 'dd/MM/yyyy HH:mm')}
+                  {t('assignmentDialog.submittedAt')}: {format(new Date(existingSubmission.submittedAt), 'dd/MM/yyyy HH:mm')}
                 </p>
               </div>
             </div>
@@ -155,7 +157,7 @@ export default function AssignmentSubmitDialog({
           {/* File Upload */}
           <div className="space-y-2">
             <Label htmlFor="submission-file" className="text-[#211c37] dark:text-white">
-              File nộp bài {existingSubmission && '(Nộp lại)'}:
+              {t('assignmentDialog.fileSubmission')} {existingSubmission && t('assignmentDialog.resubmit')}:
             </Label>
             <div className="relative">
               <input
@@ -169,7 +171,7 @@ export default function AssignmentSubmitDialog({
                       const formats = assignment.assignment.acceptedFormat.split(',').map(f => f.trim().toLowerCase())
                       const fileExt = file.name.split('.').pop()?.toLowerCase()
                       if (fileExt && !formats.includes(fileExt)) {
-                        alert(`File format không hợp lệ. Chỉ chấp nhận: ${assignment.assignment.acceptedFormat}`)
+                        alert(`${t('errors.invalidFileFormat')}: ${assignment.assignment.acceptedFormat}`)
                         return
                       }
                     }
@@ -192,7 +194,7 @@ export default function AssignmentSubmitDialog({
               >
                 <Upload className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                 <span className="text-sm text-[#211c37] dark:text-white">
-                  {selectedFile ? selectedFile.name : 'Chọn file nộp bài'}
+                  {selectedFile ? selectedFile.name : t('assignmentDialog.selectFile')}
                 </span>
               </label>
             </div>
@@ -226,14 +228,14 @@ export default function AssignmentSubmitDialog({
             disabled={isSubmitting}
             className="border-[#e5e7e7] dark:border-[#333]"
           >
-            Hủy
+            {t('assignmentDialog.cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={(!selectedFile && !existingSubmission) || !canSubmit || isSubmitting}
             className="bg-[#3bafa8] hover:bg-[#2a8d87] text-white"
           >
-            {isSubmitting ? 'Đang nộp...' : existingSubmission ? 'Nộp lại' : 'Nộp bài'}
+            {isSubmitting ? t('assignmentDialog.submitting') : existingSubmission ? t('assignmentDialog.resubmitButton') : t('assignmentDialog.submit')}
           </Button>
         </DialogFooter>
       </DialogContent>

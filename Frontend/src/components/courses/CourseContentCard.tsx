@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context/AuthProvider'
 import {
   Accordion,
@@ -60,6 +61,7 @@ interface CourseContentCardProps {
 }
 
 export default function CourseContentCard({ courseId }: CourseContentCardProps) {
+  const { t } = useTranslation()
   const { role, user } = useAuth()
   const isTutor = role === 'tutor' || role === 'admin'
   const isStudent = role === 'student'
@@ -288,8 +290,8 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
         <div className="p-4 border border-[#e5e7e7] dark:border-[#333] rounded-lg bg-white dark:bg-[#1a1a1a] space-y-3">
           <div className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            <h4 className="font-semibold text-[#1f1d39] dark:text-white flex-1">Quiz</h4>
-            <Badge variant="outline" className="ml-auto">Pass: {content.quiz?.passScore}/10</Badge>
+            <h4 className="font-semibold text-[#1f1d39] dark:text-white flex-1">{t('contentEditor.quiz')}</h4>
+            <Badge variant="outline" className="ml-auto">{t('quizDialog.passScore')}: {content.quiz?.passScore}/10</Badge>
             {result && (
               <Badge 
                 variant={passed ? "outline" : "destructive"}
@@ -304,11 +306,11 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
           </div>
           {content.quiz && (
             <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <p>Questions: {content.quiz.questions.length}</p>
-              <p>Time Limit: {content.quiz.timeLimit}</p>
+              <p>{t('quizzes.questions')}: {content.quiz.questions.length}</p>
+              <p>{t('quizzes.timeLimit')}: {content.quiz.timeLimit}</p>
               {result && (
                 <p className={`text-sm font-medium ${passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {passed ? '✓ Đạt' : '✗ Không đạt'}
+                  {passed ? `✓ ${t('quizDialog.passed')}` : `✗ ${t('quizDialog.notPassed')}`}
                 </p>
               )}
             </div>
@@ -324,7 +326,7 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
                 }
               >
                 <PlayCircle className="h-4 w-4 mr-2" />
-                {result ? 'Xem kết quả' : 'Làm bài'}
+                {result ? t('quizzes.viewResult') : t('quizzes.takeQuiz')}
               </Button>
             </div>
           )}
@@ -345,7 +347,7 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
           {content.pdf && (
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                <p>Size: {(content.pdf.fileSize / 1024).toFixed(2)} KB</p>
+                <p>{t('common.size')}: {(content.pdf.fileSize / 1024).toFixed(2)} KB</p>
               </div>
               <Button
                 variant="outline"
@@ -354,7 +356,7 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
                 className="border-[#e5e7e7] dark:border-[#333]"
               >
                 <Download className="h-4 w-4 mr-1" />
-                Download
+                {t('assignmentDialog.download')}
               </Button>
             </div>
           )}
@@ -379,22 +381,22 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
             <h4 className="font-semibold text-[#1f1d39] dark:text-white flex-1">{content.title}</h4>
             {submission && (
               <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
-                Đã nộp
+                {t('assignments.submitted')}
               </Badge>
             )}
             {isOverdue && !submission && (
-              <Badge variant="destructive">Đã hết hạn</Badge>
+              <Badge variant="destructive">{t('assignments.overdue')}</Badge>
             )}
           </div>
           {content.assignment && (
             <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <p>Max Score: {content.assignment.maxScore}</p>
+              <p>{t('assignments.maxScore')}: {content.assignment.maxScore}</p>
               <p className={isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : ''}>
-                Deadline: {format(new Date(content.assignment.deadline), 'MMM dd, yyyy HH:mm')}
-                {isOverdue && ' (Đã hết hạn)'}
+                {t('assignments.deadline')}: {format(new Date(content.assignment.deadline), 'MMM dd, yyyy HH:mm')}
+                {isOverdue && ` ${t('assignmentDialog.expired')}`}
               </p>
               {content.assignment.acceptedFormat && (
-                <p>Format: {content.assignment.acceptedFormat}</p>
+                <p>{t('assignments.format')}: {content.assignment.acceptedFormat}</p>
               )}
               {content.assignment.instructions && (
                 <p className="text-xs whitespace-pre-wrap">{content.assignment.instructions}</p>
@@ -420,7 +422,7 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
                       className="border-[#e5e7e7] dark:border-[#333]"
                     >
                       <Download className="h-4 w-4 mr-1" />
-                      Tải xuống
+                      {t('assignmentDialog.download')}
                     </Button>
                   </div>
                 </div>
@@ -433,7 +435,7 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
                     className="w-full bg-[#3bafa8] hover:bg-[#2a8d87] text-white"
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    {submission ? 'Nộp lại' : 'Nộp bài'}
+                    {submission ? t('assignmentDialog.resubmitButton') : t('assignments.submit')}
                   </Button>
                 </div>
               )}

@@ -4,28 +4,73 @@ Backend API server for the LMS (Learning Management System) that connects to Mic
 
 ## Prerequisites
 
-- Python 3.8+ 
+- Python 3.9+ 
+- Poetry (Python dependency management)
 - Microsoft SQL Server 2019 or later
 - SQL Server database `lms_system` (see `/db` folder for setup)
 
 ## Installation
 
-1. Navigate to the server directory:
+### 1. Install Poetry
+
+If you don't have Poetry installed, install it first:
+
+**Windows (PowerShell):**
+```powershell
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+```
+
+**macOS/Linux:**
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+**Or using pip:**
+```bash
+pip install poetry
+```
+
+After installation, add Poetry to your PATH (restart terminal if needed):
+```bash
+# Windows PowerShell
+$env:Path += ";$env:APPDATA\Python\Scripts"
+
+# Or add to system PATH permanently
+```
+
+### 2. Navigate to the server directory:
 ```bash
 cd Backend/server
 ```
 
-2. Install dependencies:
+### 3. Install dependencies using Poetry:
 ```bash
-pip install -r requirements.txt
+poetry install
 ```
 
-3. Create a `.env` file with your SQL Server credentials:
+This will:
+- Create a virtual environment automatically
+- Install all dependencies from `pyproject.toml`
+- Set up the project for development
+
+### 4. Activate the virtual environment:
+
+**Windows (PowerShell):**
+```powershell
+poetry shell
+```
+
+**Or run commands with poetry:**
+```bash
+poetry run python app.py
+```
+
+### 4. Create a `.env` file with your SQL Server credentials:
 ```bash
 # Create .env file manually or copy from .env.example if available
 ```
 
-4. Update `.env` with your SQL Server credentials:
+### 5. Update `.env` with your SQL Server credentials:
 ```env
 DB_SERVER=localhost
 DB_PORT=1433
@@ -42,14 +87,49 @@ NODE_ENV=development
 ## Running the Server
 
 ### Development Mode
+
+**Using Poetry:**
 ```bash
+poetry run python app.py
+```
+
+**Or activate shell first:**
+```bash
+poetry shell
 python app.py
 ```
 
 ### Production Mode
 ```bash
 # Use a production WSGI server like gunicorn
-gunicorn -w 4 -b 0.0.0.0:3001 app:app
+poetry run gunicorn -w 4 -b 0.0.0.0:3001 app:app
+```
+
+## Managing Dependencies
+
+### Add a new dependency:
+```bash
+poetry add package-name
+```
+
+### Add a development dependency:
+```bash
+poetry add --group dev package-name
+```
+
+### Update dependencies:
+```bash
+poetry update
+```
+
+### Show installed packages:
+```bash
+poetry show
+```
+
+### Export to requirements.txt (if needed):
+```bash
+poetry export -f requirements.txt --output requirements.txt --without-hashes
 ```
 
 The server will start on `http://localhost:3001` (or the port specified in `.env`).

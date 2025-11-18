@@ -16,9 +16,9 @@ def get_courses():
         for course in courses:
             result.append({
                 'Course_ID': course.Course_ID,
-                'Course_Name': course.Course_Name,
-                'Credits': course.Credits,
-                'Department_ID': course.Department_ID,
+                'Course_Name': course.Name,  # Fixed: schema uses 'Name' not 'Course_Name'
+                'Credits': course.Credit,     # Fixed: schema uses 'Credit' not 'Credits'
+                'Start_Date': str(course.Start_Date) if course.Start_Date else None,
             })
 
         return jsonify(result)
@@ -40,9 +40,9 @@ def get_course(id):
 
         return jsonify({
             'Course_ID': course.Course_ID,
-            'Course_Name': course.Course_Name,
-            'Credits': course.Credits,
-            'Department_ID': course.Department_ID,
+            'Course_Name': course.Name,  # Fixed: schema uses 'Name' not 'Course_Name'
+            'Credits': course.Credit,     # Fixed: schema uses 'Credit' not 'Credits'
+            'Start_Date': str(course.Start_Date) if course.Start_Date else None,
         })
     except Exception as e:
         print(f'Get course error: {e}')
@@ -62,9 +62,7 @@ def get_course_sections(id):
             result.append({
                 'Section_ID': section.Section_ID,
                 'Course_ID': section.Course_ID,
-                'Semester_ID': section.Semester_ID,
-                'Year': section.Year,
-                'Room_ID': section.Room_ID,
+                'Semester': section.Semester,  # Fixed: schema uses 'Semester' not 'Semester_ID'
             })
 
         return jsonify(result)
@@ -87,9 +85,7 @@ def get_section(course_id, section_id):
         return jsonify({
             'Section_ID': section.Section_ID,
             'Course_ID': section.Course_ID,
-            'Semester_ID': section.Semester_ID,
-            'Year': section.Year,
-            'Room_ID': section.Room_ID,
+            'Semester': section.Semester,  # Fixed: schema uses 'Semester' not 'Semester_ID'
         })
     except Exception as e:
         print(f'Get section error: {e}')

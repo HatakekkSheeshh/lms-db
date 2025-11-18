@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import {
   Dialog,
@@ -34,6 +35,7 @@ export default function QuizTakeDialog({
   onSubmit,
   existingResult,
 }: QuizTakeDialogProps) {
+  const { t } = useTranslation()
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -94,7 +96,7 @@ export default function QuizTakeDialog({
     try {
       await onSubmit(answers)
       if (timerRef.current) clearInterval(timerRef.current)
-      alert('Hết thời gian! Bài quiz đã được tự động nộp.')
+      alert(t('errors.timeUp'))
       onOpenChange(false)
     } catch (error) {
       console.error('Error auto-submitting quiz:', error)
@@ -142,7 +144,7 @@ export default function QuizTakeDialog({
     const answeredCount = Object.keys(answers).length
     if (answeredCount < questions.length) {
       const confirm = window.confirm(
-        `Bạn chưa trả lời ${questions.length - answeredCount} câu hỏi. Bạn có muốn nộp bài không?`
+        `${t('errors.notAllQuestionsAnswered')} ${questions.length - answeredCount} ${t('errors.questionsRemaining')}`
       )
       if (!confirm) return
     }
@@ -154,7 +156,7 @@ export default function QuizTakeDialog({
       onOpenChange(false)
     } catch (error) {
       console.error('Error submitting quiz:', error)
-      alert('Có lỗi xảy ra khi nộp bài. Vui lòng thử lại.')
+      alert(t('errors.submissionFailed'))
     } finally {
       setIsSubmitting(false)
     }
@@ -172,7 +174,7 @@ export default function QuizTakeDialog({
                 {quiz.title || 'Quiz'}
               </DialogTitle>
               <DialogDescription className="text-gray-600 dark:text-gray-400 mt-1">
-                Pass Score: {quiz.quiz.passScore}/10 | Time Limit: {quiz.quiz.timeLimit}
+                {t('quizDialog.passScore')}: {quiz.quiz.passScore}/10 | {t('quizDialog.timeLimit')}: {quiz.quiz.timeLimit}
               </DialogDescription>
             </div>
             {timeRemaining !== null && timeRemaining > 0 && (
@@ -193,7 +195,7 @@ export default function QuizTakeDialog({
               <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-green-100 dark:bg-green-900/30">
                 <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                  Đã hoàn thành
+                  {t('quizDialog.completed')}
                 </span>
               </div>
             )}
@@ -205,10 +207,10 @@ export default function QuizTakeDialog({
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-[#211c37] dark:text-white">
-                Câu hỏi {currentQuestionIndex + 1} / {questions.length}
+                {t('quizDialog.question')} {currentQuestionIndex + 1} {t('quizDialog.of')} {questions.length}
               </span>
               <span className="text-gray-600 dark:text-gray-400">
-                Đã trả lời: {answeredCount} / {questions.length}
+                {t('quizDialog.answered')}: {answeredCount} {t('quizDialog.of')} {questions.length}
               </span>
             </div>
             <Progress value={progress} className="h-2" />
@@ -282,17 +284,17 @@ export default function QuizTakeDialog({
 
           {/* Result Info */}
           {existingResult && (
-            <div className="p-4 border border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-900/20">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                  Kết quả: {existingResult.score.toFixed(1)}/10 ({existingResult.score >= quiz.quiz.passScore ? 'Đạt' : 'Không đạt'})
-                </span>
+              <div className="p-4 border border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-900/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                    {t('quizDialog.result')}: {existingResult.score.toFixed(1)}/10 ({existingResult.score >= quiz.quiz.passScore ? t('quizDialog.passed') : t('quizDialog.notPassed')})
+                  </span>
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  {t('quizDialog.submittedAt')}: {format(new Date(existingResult.submittedAt), 'dd/MM/yyyy HH:mm')}
+                </p>
               </div>
-              <p className="text-xs text-green-600 dark:text-green-400">
-                Nộp lúc: {format(new Date(existingResult.submittedAt), 'dd/MM/yyyy HH:mm')}
-              </p>
-            </div>
           )}
         </div>
 
@@ -304,7 +306,7 @@ export default function QuizTakeDialog({
               disabled={currentQuestionIndex === 0 || !!existingResult || isSubmitting}
               className="border-[#e5e7e7] dark:border-[#333]"
             >
-              Câu trước
+              {t('quizDialog.previous')}
             </Button>
             <Button
               variant="outline"
@@ -312,7 +314,7 @@ export default function QuizTakeDialog({
               disabled={currentQuestionIndex === questions.length - 1 || !!existingResult || isSubmitting}
               className="border-[#e5e7e7] dark:border-[#333]"
             >
-              Câu sau
+              {t('quizDialog.next')}
             </Button>
           </div>
           <div className="flex gap-2">
@@ -326,7 +328,7 @@ export default function QuizTakeDialog({
               disabled={isSubmitting}
               className="border-[#e5e7e7] dark:border-[#333]"
             >
-              {existingResult ? 'Đóng' : 'Hủy'}
+              {existingResult ? t('quizDialog.close') : t('quizDialog.cancel')}
             </Button>
             {!existingResult && (
               <Button
@@ -334,7 +336,7 @@ export default function QuizTakeDialog({
                 disabled={isSubmitting || isTimeUp}
                 className="bg-[#3bafa8] hover:bg-[#2a8d87] text-white"
               >
-                {isSubmitting ? 'Đang nộp...' : 'Nộp bài'}
+                {isSubmitting ? t('quizDialog.submitting') : t('quizDialog.submit')}
               </Button>
             )}
           </div>
