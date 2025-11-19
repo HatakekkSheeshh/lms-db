@@ -59,3 +59,7 @@ cache/
 # Build outputs
 *.tsbuildinfo
 
+# Database scripts (contain sensitive schema information)
+lms_database.sql
+script.sql
+
