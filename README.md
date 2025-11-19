@@ -61,8 +61,44 @@ For development with hot reload enabled:
 docker-compose -f docker-compose.dev.yml up --build
 ```
 
+**Note:** This command will:
+- ✅ **Build images** (if needed or if `--build` flag is used)
+- ✅ **Start containers** (run the services)
+- ✅ **Show logs** in the terminal (press `Ctrl+C` to stop)
+
+If you want to run in the background (detached mode):
+```bash
+docker-compose -f docker-compose.dev.yml up --build -d
+```
+
+**How Hot Reload Works:**
+- ✅ **No need to enter the container** - Just edit code on your local machine
+- ✅ **Automatic reload** - Changes are detected automatically:
+  - **Frontend**: Edit files in `Frontend/src/` → Browser updates instantly (Vite HMR)
+  - **Backend**: Edit files in `Backend/server/` → Flask server auto-reloads
+- ✅ **Volume mounts** - Your local code is mounted into containers, so changes are immediate
+- ✅ **Just save your files** - That's it! No manual restart needed
+
+**Example workflow:**
+1. Start containers: `docker-compose -f docker-compose.dev.yml up --build`
+2. Edit `Frontend/src/App.tsx` on your computer
+3. Save the file
+4. Browser automatically updates! ✨
+
 **Useful Docker Commands:**
 
+**Starting Services:**
+- Start services (build if needed): `docker-compose up`
+- Start with rebuild: `docker-compose up --build`
+- Start in background: `docker-compose up -d`
+- Start specific service: `docker-compose up backend`
+
+**Building Only (without running):**
+- Build images only: `docker-compose build`
+- Rebuild specific service: `docker-compose build backend`
+- Force rebuild without cache: `docker-compose build --no-cache`
+
+**Managing Containers:**
 - Stop all services: `docker-compose down`
 - View logs: `docker-compose logs -f`
 - Rebuild services: `docker-compose up --build`

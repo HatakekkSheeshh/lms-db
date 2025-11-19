@@ -11,8 +11,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-ENV POETRY_VERSION=1.7.1
+# Install Poetry (latest version to support package-mode)
 ENV POETRY_HOME=/opt/poetry
 ENV POETRY_NO_INTERACTION=1
 ENV POETRY_VENV_IN_PROJECT=1
@@ -27,7 +26,7 @@ COPY pyproject.toml poetry.lock ./
 
 # Configure Poetry: Don't create virtual env, install dependencies to system
 RUN poetry config virtualenvs.create false && \
-    poetry install --no-dev --no-interaction --no-ansi && \
+    poetry install --only=main --no-interaction --no-ansi && \
     rm -rf $POETRY_CACHE_DIR
 
 # Copy application code

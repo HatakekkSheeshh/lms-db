@@ -13,19 +13,15 @@ services:
       - "3001:3001"
     environment:
       - PORT=3001
-      - DB_SERVER=${DB_SERVER:-localhost}
-      - DB_PORT=${DB_PORT:-1433}
-      - DB_DATABASE=${DB_DATABASE:-lms_system}
-      - DB_USER=${DB_USER:-sa}
-      - DB_PASSWORD=${DB_PASSWORD:-}
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-this-in-production}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
     env_file:
       - ./Backend/server/.env
     volumes:
       - ./Backend/server:/app
+      - /app/.venv  # Preserve virtualenv if created
     restart: unless-stopped
-    command: poetry run python app.py
+    command: sh -c "poetry config virtualenvs.create false && poetry install --only=main --no-interaction --no-ansi && poetry run python app.py"
 
   frontend:
     build:
