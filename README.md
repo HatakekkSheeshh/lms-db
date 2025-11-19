@@ -28,6 +28,7 @@ BTL/
 - Node.js 18 or higher
 - Poetry (Python dependency management tool)
 - Azure SQL Database or SQL Server instance
+- Docker and Docker Compose (optional, for containerized deployment)
 
 ### Backend Setup
 
@@ -108,6 +109,47 @@ npm run dev
 ```
 
 The frontend application runs on `http://localhost:5173` by default.
+
+### Docker Setup (Recommended)
+
+**Prerequisites:**
+- Docker Desktop or Docker Engine installed
+- Docker Compose installed (included with Docker Desktop)
+
+**Quick Start with Docker:**
+
+1. Configure environment variables:
+   - Ensure `Backend/server/.env` file exists with your database credentials
+   - The frontend will automatically use `http://localhost:3001/api` as the API base URL
+
+2. Build and start all services:
+   ```bash
+   docker-compose up --build
+   ```
+
+3. Access the application:
+   - Frontend: `http://localhost:5173`
+   - Backend API: `http://localhost:3001/api`
+   - Health Check: `http://localhost:3001/api/health`
+
+**Development Mode with Hot Reload:**
+
+For development with hot reload enabled:
+```bash
+docker-compose -f docker-compose.dev.yml up --build
+```
+
+**Useful Docker Commands:**
+
+- Stop all services: `docker-compose down`
+- View logs: `docker-compose logs -f`
+- Rebuild services: `docker-compose up --build`
+- Stop and remove volumes: `docker-compose down -v`
+- Run in detached mode: `docker-compose up -d`
+
+**Docker Services:**
+- `backend`: Flask API server (port 3001)
+- `frontend`: React/Vite application (port 5173 in dev, port 80 in production)
 
 ## Technology Stack
 
