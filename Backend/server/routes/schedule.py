@@ -10,20 +10,17 @@ def get_user_schedule(user_id):
         cursor = conn.cursor()
 
         # Get schedule based on enrollments
+        # Note: Using Assessment table to get student enrollments
         cursor.execute("""
-            SELECT
+            SELECT DISTINCT
                 s.Section_ID,
-                c.Course_Name,
+                c.Name as Course_Name,
                 c.Course_ID,
-                s.Semester_ID,
-                s.Year,
-                r.Building_ID,
-                r.Room_Number
-            FROM [Enrollment] e
-            INNER JOIN [Section] s ON e.Section_ID = s.Section_ID
+                s.Semester
+            FROM [Assessment] a
+            INNER JOIN [Section] s ON a.Section_ID = s.Section_ID AND a.Course_ID = s.Course_ID AND a.Semester = s.Semester
             INNER JOIN [Course] c ON s.Course_ID = c.Course_ID
-            LEFT JOIN [Room] r ON s.Room_ID = r.Room_ID
-            WHERE e.University_ID = ?
+            WHERE a.University_ID = ?
         """, user_id)
 
         schedule_items = cursor.fetchall()
@@ -35,10 +32,7 @@ def get_user_schedule(user_id):
                 'Section_ID': item.Section_ID,
                 'Course_Name': item.Course_Name,
                 'Course_ID': item.Course_ID,
-                'Semester_ID': item.Semester_ID,
-                'Year': item.Year,
-                'Building_ID': item.Building_ID,
-                'Room_Number': item.Room_Number,
+                'Semester': item.Semester,
             })
 
         return jsonify(result)

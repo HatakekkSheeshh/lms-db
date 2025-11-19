@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { ROUTES } from '@/constants/routes'
 import { ArrowLeft, Upload, CheckCircle2 } from 'lucide-react'
 
 export default function AssignmentSubmitPage() {
+  const { t } = useTranslation()
   const { assignmentId } = useParams<{ assignmentId: string }>()
   const navigate = useNavigate()
   const { user } = useAuthStore()
@@ -41,11 +43,11 @@ export default function AssignmentSubmitPage() {
           navigate(ROUTES.ASSIGNMENTS)
         }, 2000)
       } else {
-        alert(result.error || 'Failed to submit assignment')
+        alert(result.error || t('assignmentSubmit.failedToSubmit'))
       }
     } catch (error) {
       console.error('Error submitting assignment:', error)
-      alert('Có lỗi xảy ra khi nộp bài. Vui lòng thử lại.')
+      alert(t('errors.submissionFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -58,8 +60,8 @@ export default function AssignmentSubmitPage() {
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
               <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-              <h2 className="text-2xl font-bold text-[#1f1d39]">Submission Successful!</h2>
-              <p className="text-[#85878d]">Redirecting...</p>
+              <h2 className="text-2xl font-bold text-[#1f1d39]">{t('assignmentSubmit.submissionSuccessful')}</h2>
+              <p className="text-[#85878d]">{t('assignmentSubmit.redirecting')}</p>
             </div>
           </CardContent>
         </Card>
@@ -69,8 +71,8 @@ export default function AssignmentSubmitPage() {
 
   return (
     <DashboardLayout 
-      title="Submit Assignment"
-      subtitle="Upload your assignment file"
+      title={t('assignmentSubmit.title')}
+      subtitle={t('assignmentSubmit.subtitle')}
     >
       <div className="space-y-6 max-w-2xl">
         <Button
@@ -79,18 +81,18 @@ export default function AssignmentSubmitPage() {
           className="mb-4 border border-[#e5e7e7] hover:bg-gray-50"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Assignments
+          {t('assignmentSubmit.backToAssignments')}
         </Button>
 
         <Card className="border border-[#e5e7e7] rounded-xl">
           <CardHeader>
-            <CardTitle className="text-xl text-[#1f1d39]">Submit Assignment</CardTitle>
-            <CardDescription className="text-[#85878d]">Upload your assignment file</CardDescription>
+            <CardTitle className="text-xl text-[#1f1d39]">{t('assignmentSubmit.title')}</CardTitle>
+            <CardDescription className="text-[#85878d]">{t('assignmentSubmit.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="file" className="text-[#676767]">Select File</Label>
+                <Label htmlFor="file" className="text-[#676767]">{t('assignmentSubmit.selectFile')}</Label>
                 <Input
                   id="file"
                   type="file"
@@ -100,7 +102,7 @@ export default function AssignmentSubmitPage() {
                 />
                 {file && (
                   <p className="text-sm text-[#85878d]">
-                    Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                    {t('assignmentSubmit.selected')}: {file.name} ({(file.size / 1024).toFixed(2)} KB)
                   </p>
                 )}
               </div>
@@ -112,11 +114,11 @@ export default function AssignmentSubmitPage() {
                   className="flex-1 bg-black hover:bg-gray-800 text-white"
                 >
                   {submitting ? (
-                    'Submitting...'
+                    t('assignmentSubmit.submitting')
                   ) : (
                     <>
                       <Upload className="mr-2 h-4 w-4" />
-                      Submit
+                      {t('assignmentSubmit.submit')}
                     </>
                   )}
                 </Button>
@@ -126,7 +128,7 @@ export default function AssignmentSubmitPage() {
                   onClick={() => navigate(ROUTES.ASSIGNMENTS)}
                   className="border-[#e5e7e7] hover:bg-gray-50"
                 >
-                  Cancel
+                  {t('assignmentSubmit.cancel')}
                 </Button>
               </div>
             </form>

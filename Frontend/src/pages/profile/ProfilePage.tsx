@@ -1,6 +1,7 @@
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/context/AuthProvider'
+import { useTranslation } from 'react-i18next'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Mail, Phone, MapPin, IdCard } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -11,6 +12,7 @@ import {
 } from '@/lib/utils/theme-utils'
 
 export default function ProfilePage() {
+  const { t } = useTranslation()
   const { user, role } = useAuth()
   const neoBrutalismMode = useNeoBrutalismMode()
 
@@ -20,7 +22,7 @@ export default function ProfilePage() {
         <div className={cn(
           "text-[#85878d]",
           getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-        )}>User information not found</div>
+        )}>{t('errors.userNotFound')}</div>
       </DashboardLayout>
     )
   }
@@ -31,8 +33,8 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout 
-      title="Profile" 
-      subtitle="View and manage your account information"
+      title={t('profile.title')} 
+      subtitle={t('profile.subtitle')}
     >
       <div className="space-y-6">
         <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
@@ -78,7 +80,7 @@ export default function ProfilePage() {
                   <p className={cn(
                     "text-sm font-medium text-[#676767] dark:text-gray-400 mb-1",
                     getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                  )}>University ID</p>
+                  )}>{t('profile.universityId')}</p>
                   <p className={cn(
                     "text-sm font-semibold text-[#1f1d39] dark:text-white",
                     getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
@@ -97,7 +99,7 @@ export default function ProfilePage() {
                   <p className={cn(
                     "text-sm font-medium text-[#676767] dark:text-gray-400 mb-1",
                     getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                  )}>Email</p>
+                  )}>{t('profile.email')}</p>
                   <p className={cn(
                     "text-sm font-semibold text-[#1f1d39] dark:text-white",
                     getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
@@ -117,7 +119,7 @@ export default function ProfilePage() {
                     <p className={cn(
                       "text-sm font-medium text-[#676767] dark:text-gray-400 mb-1",
                       getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                    )}>Phone Number</p>
+                    )}>{t('profile.phoneNumber')}</p>
                     <p className={cn(
                       "text-sm font-semibold text-[#1f1d39] dark:text-white",
                       getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
@@ -138,7 +140,7 @@ export default function ProfilePage() {
                     <p className={cn(
                       "text-sm font-medium text-[#676767] dark:text-gray-400 mb-1",
                       getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                    )}>Address</p>
+                    )}>{t('profile.address')}</p>
                     <p className={cn(
                       "text-sm font-semibold text-[#1f1d39] dark:text-white",
                       getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
@@ -159,7 +161,7 @@ export default function ProfilePage() {
                     <p className={cn(
                       "text-sm font-medium text-[#676767] dark:text-gray-400 mb-1",
                       getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                    )}>National ID</p>
+                    )}>{t('profile.nationalId')}</p>
                     <p className={cn(
                       "text-sm font-semibold text-[#1f1d39] dark:text-white",
                       getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')

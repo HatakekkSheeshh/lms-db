@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import { ROUTES } from '@/constants/routes'
 import { ArrowLeft, Clock, AlertCircle } from 'lucide-react'
 
 export default function QuizTakePage() {
+  const { t } = useTranslation()
   const { quizId } = useParams<{ quizId: string }>()
   const navigate = useNavigate()
   const [quiz, setQuiz] = useState<any>(null)
@@ -86,7 +88,7 @@ export default function QuizTakePage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Đang tải...</div>
+          <div className="text-lg">{t('quizTake.loading')}</div>
         </div>
       </DashboardLayout>
     )
@@ -95,7 +97,7 @@ export default function QuizTakePage() {
   if (!quiz) {
     return (
       <DashboardLayout>
-        <div className="text-[#85878d]">Quiz not found</div>
+        <div className="text-[#85878d]">{t('errors.quizNotFound')}</div>
       </DashboardLayout>
     )
   }
@@ -105,7 +107,7 @@ export default function QuizTakePage() {
   return (
     <DashboardLayout 
       title={`Quiz ${quiz.Assessment_ID}`}
-      subtitle="Take the quiz"
+      subtitle={t('quizTake.title')}
     >
       <div className="space-y-6 max-w-3xl">
         <Button
@@ -114,7 +116,7 @@ export default function QuizTakePage() {
           className="mb-4 border border-[#e5e7e7] hover:bg-gray-50"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Quizzes
+          {t('quizTake.backToQuizzes')}
         </Button>
 
         <Card className="border border-[#e5e7e7] rounded-xl">
@@ -134,13 +136,13 @@ export default function QuizTakePage() {
             {isTimeUp && (
               <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
                 <AlertCircle className="h-5 w-5" />
-                <span>Time's up! Quiz will be automatically submitted.</span>
+                <span>{t('quizTake.timeUp')}</span>
               </div>
             )}
 
             <div className="space-y-4">
               <div>
-                <Label className="text-base font-semibold text-[#1f1d39]">Question</Label>
+                <Label className="text-base font-semibold text-[#1f1d39]">{t('quizTake.question')}</Label>
                 <p className="text-[#676767] mt-1">{quiz.content}</p>
               </div>
 
@@ -156,7 +158,7 @@ export default function QuizTakePage() {
                     <div key={option} className="flex items-center space-x-2 p-3 border border-[#e5e7e7] rounded-lg hover:bg-gray-50">
                       <RadioGroupItem value={option} id={option} />
                       <Label htmlFor={option} className="cursor-pointer flex-1 text-[#1f1d39]">
-                        Option {option}
+                        {t('quizTake.option')} {option}
                       </Label>
                     </div>
                   ))}
@@ -170,7 +172,7 @@ export default function QuizTakePage() {
                 disabled={isTimeUp || submitting || !answers[quiz.Assessment_ID.toString()]}
                 className="flex-1 bg-black hover:bg-gray-800 text-white"
               >
-                {submitting ? 'Submitting...' : 'Submit Quiz'}
+                {submitting ? t('quizTake.submitting') : t('quizTake.submitQuiz')}
               </Button>
             </div>
           </CardContent>

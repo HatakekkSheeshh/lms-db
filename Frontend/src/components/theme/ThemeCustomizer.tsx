@@ -1,5 +1,6 @@
 import { useThemeStore } from '@/store/themeStore'
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,6 +25,7 @@ const COLOR_PRESETS = [
 ]
 
 export default function ThemeCustomizer() {
+  const { t } = useTranslation()
   const { primaryColor, fontFamily, darkMode, neoBrutalismMode, setPrimaryColor, setFontFamily, toggleDarkMode, setNeoBrutalismMode, resetTheme } = useThemeStore()
   const [showSuccess, setShowSuccess] = useState(false)
   const [tempFontFamily, setTempFontFamily] = useState(fontFamily)
@@ -85,7 +87,7 @@ export default function ThemeCustomizer() {
           "text-sm font-medium text-[#211c37] dark:text-white mb-4 block",
           getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
         )}>
-          Chế độ giao diện
+          {t('theme.interfaceMode')}
         </Label>
         <div className={cn(
           "flex items-center justify-between p-4 bg-[#f5f7f9] dark:bg-[#1a1a1a]",
@@ -103,7 +105,7 @@ export default function ThemeCustomizer() {
               "text-sm font-medium text-[#211c37] dark:text-white",
               getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
             )}>
-              {tempDarkMode ? 'Dark Mode' : 'Light Mode'}
+              {tempDarkMode ? t('theme.darkMode') : t('theme.lightMode')}
             </span>
           </div>
           <button
@@ -129,7 +131,7 @@ export default function ThemeCustomizer() {
           "text-sm font-medium text-[#211c37] dark:text-white mb-4 block",
           getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
         )}>
-          Style Theme
+          {t('theme.styleTheme')}
         </Label>
         <div className={cn(
           "flex items-center justify-between p-4 bg-[#f5f7f9] dark:bg-[#1a1a1a]",
@@ -148,13 +150,13 @@ export default function ThemeCustomizer() {
                 "text-sm font-medium text-[#211c37] dark:text-white",
                 getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
               )}>
-                {tempNeoBrutalismMode ? 'Neo-Brutalism' : 'Normal'}
+                {tempNeoBrutalismMode ? t('theme.neoBrutalism') : t('theme.normal')}
               </span>
               <span className={cn(
                 "text-xs text-[#85878d] dark:text-gray-400",
                 getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'body')
               )}>
-                {tempNeoBrutalismMode ? 'Bold borders, sharp shadows' : 'Smooth, rounded design'}
+                {tempNeoBrutalismMode ? t('theme.boldBorders') : t('theme.smoothRounded')}
               </span>
             </div>
           </div>
@@ -182,7 +184,7 @@ export default function ThemeCustomizer() {
             "text-sm font-medium text-[#211c37] dark:text-white mb-4 block",
             getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
           )}>
-            Màu chủ đạo
+            {t('theme.primaryColor')}
           </Label>
           
           {/* Color Presets */}
@@ -247,7 +249,7 @@ export default function ThemeCustomizer() {
           "text-sm font-medium text-[#211c37] dark:text-white mb-4 block",
           getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')
         )}>
-          Font chữ
+          {t('theme.font')}
         </Label>
         <select
           value={tempFontFamily}
@@ -277,7 +279,7 @@ export default function ThemeCustomizer() {
             "text-base text-[#211c37] dark:text-white",
             getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'body')
           )} style={{ fontFamily: tempFontFamily }}>
-            Xem trước font chữ: The quick brown fox jumps over the lazy dog
+            {t('theme.fontPreview')}: {t('theme.fontPreviewText')}
           </p>
         </div>
       </div>
@@ -297,10 +299,10 @@ export default function ThemeCustomizer() {
           {showSuccess ? (
             <>
               <Check className="w-4 h-4 mr-2" />
-              <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>Đã lưu!</span>
+              <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>{t('theme.saved')}</span>
             </>
           ) : (
-            <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>Lưu thay đổi</span>
+            <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>{t('theme.saveChanges')}</span>
           )}
         </Button>
         <Button
@@ -313,7 +315,7 @@ export default function ThemeCustomizer() {
               : "border-[#e7eae9] dark:border-[#333] rounded-xl hover:bg-[#f5f7f9] dark:hover:bg-[#2a2a2a]"
           )}
         >
-          <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>Đặt lại mặc định</span>
+          <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>{t('theme.resetDefault')}</span>
         </Button>
       </div>
 
@@ -326,7 +328,7 @@ export default function ThemeCustomizer() {
             : "rounded-xl"
         )}>
           <Check className="w-4 h-4" />
-          <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>Đã lưu thành công! Các thay đổi đã được áp dụng.</span>
+          <span className={getNeoBrutalismTextClasses(tempNeoBrutalismMode, 'bold')}>{t('theme.saveSuccess')}</span>
         </div>
       )}
     </div>
