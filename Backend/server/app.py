@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
         # Start server
         print(f'🚀 Server running on http://localhost:{PORT}')
-        app.run(host='0.0.0.0', port=PORT, debug=True)
+        app.run(host='0.0.0.0', port=PORT, debug=True, use_reloader=True, use_debugger=True)
     except Exception as e:
         print(f'Failed to start server: {e}')
         exit(1)

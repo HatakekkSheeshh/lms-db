@@ -292,7 +292,7 @@
 }
 
 .glassmorphism-bg {
-  background-image: url('/Space.jpg');
+  background-image: url('/bk.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -301,7 +301,7 @@
 }
 
 .dark .glassmorphism-bg {
-  background-image: url('/Space.jpg');
+  background-image: url('/bk.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

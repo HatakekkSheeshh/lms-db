@@ -13,5 +13,12 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    watch: {
+      usePolling: true, // Enable polling for better file watching in Docker on Windows
+      interval: 1000, // Poll every 1 second
+    },
+    host: '0.0.0.0', // Allow external connections
+  },
 })
 
