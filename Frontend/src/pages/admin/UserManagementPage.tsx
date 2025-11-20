@@ -438,7 +438,7 @@ export default function UserManagementPage() {
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             className="h-8 px-2 lg:px-3"
           >
-            {t('admin.firstName')}
+            {t('admin.fullName')}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         )

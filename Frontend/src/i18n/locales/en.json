@@ -368,6 +368,7 @@
     "fillInfoToCreate": "Fill in information to create a new user",
     "universityId": "University ID",
     "firstName": "First Name",
+    "fullName": "Full Name",
     "lastName": "Last Name",
     "email": "Email",
     "phoneNumber": "Phone Number",
