@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
   TableBody,
@@ -46,12 +47,14 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { adminService } from '@/lib/api/adminService'
+import { adminService, type AuditLog, type GPAStatisticsByMajor, type GPAStatisticsByDepartment, type CourseEnrollmentStatistics, type CompletionRateStatistics, type PerformanceOverTime, type TopStudent, type TopTutor } from '@/lib/api/adminService'
 import type { User, UserRole } from '@/types'
 import { 
   Users, Plus, Search, Edit2, Trash2, GraduationCap, UserCheck, Shield,
-  Download, ArrowUpDown, MoreHorizontal, ChevronDown, KeyRound, Eye, Filter, X, Loader2
+  Download, ArrowUpDown, MoreHorizontal, ChevronDown, KeyRound, Eye, Filter, X, Loader2, FileText, Clock, BarChart3
 } from 'lucide-react'
+import { DatePickerWithRange } from '@/components/ui/date-time-picker'
+import type { DateRange } from 'react-day-picker'
 import { cn } from '@/lib/utils'
 import { 
   useNeoBrutalismMode, 
@@ -72,7 +75,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { Pie, PieChart as RechartsPieChart, Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Cell } from 'recharts'
+import { Pie, PieChart as RechartsPieChart, Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Cell, Legend } from 'recharts'
 
 export default function UserManagementPage() {
   const { t } = useTranslation()
@@ -97,6 +100,27 @@ export default function UserManagementPage() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [selectedUserDetails, setSelectedUserDetails] = useState<any>(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
+  const [showAuditLogs, setShowAuditLogs] = useState(false)
+  const [auditLogs, setAuditLogs] = useState<any[]>([])
+  const [auditLogStats, setAuditLogStats] = useState<any>(null)
+  const [loadingAuditLogs, setLoadingAuditLogs] = useState(false)
+  const [auditLogPage, setAuditLogPage] = useState(1)
+  const [auditLogTotalPages, setAuditLogTotalPages] = useState(1)
+  const [auditLogFilters, setAuditLogFilters] = useState({
+    dateRange: undefined as DateRange | undefined,
+    university_id: undefined as number | undefined,
+  })
+  const [showUserList, setShowUserList] = useState(false)
+  const [showAdvancedStatistics, setShowAdvancedStatistics] = useState(false)
+  const [gpaByMajor, setGpaByMajor] = useState<any[]>([])
+  const [gpaByDepartment, setGpaByDepartment] = useState<any[]>([])
+  const [enrollmentStats, setEnrollmentStats] = useState<any[]>([])
+  const [completionRates, setCompletionRates] = useState<any[]>([])
+  const [performanceOverTime, setPerformanceOverTime] = useState<any[]>([])
+  const [topStudents, setTopStudents] = useState<any[]>([])
+  const [topTutors, setTopTutors] = useState<any[]>([])
+  const [loadingAdvancedStats, setLoadingAdvancedStats] = useState(false)
+  const [performanceGroupBy, setPerformanceGroupBy] = useState<'Semester' | 'Month'>('Semester')
   const neoBrutalismMode = useNeoBrutalismMode()
 
   // Table state
@@ -872,6 +896,117 @@ export default function UserManagementPage() {
     }
   }
 
+  // Load Audit Logs
+  const loadAuditLogs = async () => {
+    try {
+      setLoadingAuditLogs(true)
+      const params: any = {
+        page: auditLogPage,
+        page_size: 20,
+      }
+      
+      // Convert DateRange to string format for API
+      // Stored procedure will handle date comparison to include the entire end date
+      if (auditLogFilters.dateRange?.from) {
+        params.start_date = auditLogFilters.dateRange.from.toISOString().split('T')[0]
+      }
+      if (auditLogFilters.dateRange?.to) {
+        params.end_date = auditLogFilters.dateRange.to.toISOString().split('T')[0]
+      }
+      if (auditLogFilters.university_id) {
+        params.university_id = auditLogFilters.university_id
+      }
+      
+      // Prepare statistics params with same date logic
+      const statsParams: any = {}
+      if (auditLogFilters.dateRange?.from) {
+        statsParams.start_date = auditLogFilters.dateRange.from.toISOString().split('T')[0]
+      }
+      if (auditLogFilters.dateRange?.to) {
+        statsParams.end_date = auditLogFilters.dateRange.to.toISOString().split('T')[0]
+      }
+      
+      const [logsResult, statsResult] = await Promise.all([
+        adminService.getAuditLogs(params),
+        adminService.getAuditLogStatistics(statsParams),
+      ])
+      
+      setAuditLogs(logsResult.logs)
+      setAuditLogTotalPages(logsResult.total_pages)
+      setAuditLogStats(statsResult)
+    } catch (error) {
+      console.error('Error loading audit logs:', error)
+      alert(t('admin.errorLoadingAuditLogs') || 'Error loading audit logs')
+    } finally {
+      setLoadingAuditLogs(false)
+    }
+  }
+
+  useEffect(() => {
+    if (showAuditLogs) {
+      loadAuditLogs()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAuditLogs, auditLogPage])
+
+  useEffect(() => {
+    if (showAuditLogs) {
+      // Only search when both start and end dates are selected, or when dateRange is cleared
+      const hasDateRange = auditLogFilters.dateRange?.from && auditLogFilters.dateRange?.to
+      const isDateRangeCleared = !auditLogFilters.dateRange?.from && !auditLogFilters.dateRange?.to
+      
+      if (hasDateRange || isDateRangeCleared) {
+        setAuditLogPage(1) // Reset to page 1 when filters change
+        loadAuditLogs()
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auditLogFilters.dateRange?.from, auditLogFilters.dateRange?.to, auditLogFilters.university_id])
+
+  // Load Advanced Statistics
+  const loadAdvancedStatistics = async () => {
+    try {
+      setLoadingAdvancedStats(true)
+      const [
+        majorStats,
+        deptStats,
+        enrollmentStatsData,
+        completionRatesData,
+        performanceData,
+        topStudentsData,
+        topTutorsData
+      ] = await Promise.all([
+        adminService.getGPAStatisticsByMajor(),
+        adminService.getGPAStatisticsByDepartment(),
+        adminService.getCourseEnrollmentStatistics(),
+        adminService.getCompletionRateStatistics(),
+        adminService.getPerformanceOverTime(performanceGroupBy),
+        adminService.getTopStudents(10),
+        adminService.getTopTutors(10),
+      ])
+      
+      setGpaByMajor(majorStats)
+      setGpaByDepartment(deptStats)
+      setEnrollmentStats(enrollmentStatsData)
+      setCompletionRates(completionRatesData)
+      setPerformanceOverTime(performanceData)
+      setTopStudents(topStudentsData)
+      setTopTutors(topTutorsData)
+    } catch (error) {
+      console.error('Error loading advanced statistics:', error)
+      alert(t('admin.errorLoadingStatistics') || 'Error loading statistics')
+    } finally {
+      setLoadingAdvancedStats(false)
+    }
+  }
+
+  useEffect(() => {
+    if (showAdvancedStatistics) {
+      loadAdvancedStatistics()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAdvancedStatistics, performanceGroupBy])
+
   // Calculate GPA for a course: 10% quiz + 20% assignment + 20% midterm + 50% final
   const calculateCourseGPA = (course: any): number | null => {
     const quiz = course.Quiz_Grade !== null ? parseFloat(course.Quiz_Grade) : null
@@ -1633,6 +1768,7 @@ export default function UserManagementPage() {
                   <Loader2 className="h-5 w-5 animate-spin text-[#3bafa8] dark:text-[#3bafa8]" />
                 )}
               </div>
+              <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="ml-auto">
@@ -1659,8 +1795,23 @@ export default function UserManagementPage() {
                     })}
                 </DropdownMenuContent>
               </DropdownMenu>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowUserList(!showUserList)}
+                  className={cn(
+                    "gap-2",
+                    neoBrutalismMode 
+                      ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline')
+                      : ""
+                  )}
+                >
+                  <Eye className="h-4 w-4" />
+                  {showUserList ? (t('admin.hideUserList') || 'Hide List') : (t('admin.showUserList') || 'Show List')}
+                </Button>
+              </div>
             </div>
           </CardHeader>
+          {showUserList && (
           <CardContent>
             <div className="relative">
               {filtering && (
@@ -1739,8 +1890,10 @@ export default function UserManagementPage() {
                 "text-muted-foreground flex-1 text-sm",
                 getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
               )}>
-                {table.getFilteredSelectedRowModel().rows.length} of{' '}
-                {table.getFilteredRowModel().rows.length} hàng đã chọn.
+                {t('admin.rowsSelected', { 
+                  selected: table.getFilteredSelectedRowModel().rows.length,
+                  total: table.getFilteredRowModel().rows.length
+                }) || `${table.getFilteredSelectedRowModel().rows.length} of ${table.getFilteredRowModel().rows.length} ${t('admin.rowsSelectedText') || 'rows selected'}`}
               </div>
               <div className="space-x-2">
                 <Button
@@ -1772,6 +1925,1150 @@ export default function UserManagementPage() {
               </div>
             </div>
           </CardContent>
+          )}
+        </Card>
+
+        {/* Audit Log Viewer */}
+        <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className={cn(
+                  "text-xl text-[#1f1d39] dark:text-white",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                )}>
+                  {t('admin.auditLogs') || 'Audit Logs'}
+                </CardTitle>
+                <CardDescription className={cn(
+                  "text-[#85878d] dark:text-gray-400",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                )}>
+                  {t('admin.auditLogsDescription') || 'View system activity and changes'}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowAuditLogs(!showAuditLogs)}
+                className={cn(
+                  "gap-2",
+                  neoBrutalismMode 
+                    ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline')
+                    : ""
+                )}
+              >
+                <FileText className="h-4 w-4" />
+                {showAuditLogs ? (t('admin.hideAuditLogs') || 'Hide Logs') : (t('admin.showAuditLogs') || 'Show Logs')}
+              </Button>
+            </div>
+          </CardHeader>
+          {showAuditLogs && (
+            <CardContent>
+              {/* Statistics */}
+              {auditLogStats && (
+                <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6 mb-6">
+                  <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                    <CardContent className="pt-4">
+                      <div className={cn(
+                        "text-2xl font-bold text-[#211c37] dark:text-white",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                      )}>
+                        {auditLogStats.total_logs || 0}
+                      </div>
+                      <p className={cn(
+                        "text-xs text-muted-foreground",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
+                        {t('admin.totalLogs') || 'Total Logs'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                    <CardContent className="pt-4">
+                      <div className={cn(
+                        "text-2xl font-bold text-[#211c37] dark:text-white",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                      )}>
+                        {auditLogStats.unique_users || 0}
+                      </div>
+                      <p className={cn(
+                        "text-xs text-muted-foreground",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
+                        {t('admin.uniqueUsers') || 'Unique Users'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                    <CardContent className="pt-4">
+                      <div className={cn(
+                        "text-2xl font-bold text-[#211c37] dark:text-white",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                      )}>
+                        {auditLogStats.section_creations || 0}
+                      </div>
+                      <p className={cn(
+                        "text-xs text-muted-foreground",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
+                        {t('admin.sectionCreations') || 'Section Creations'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                    <CardContent className="pt-4">
+                      <div className={cn(
+                        "text-2xl font-bold text-[#211c37] dark:text-white",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                      )}>
+                        {auditLogStats.deadline_extensions || 0}
+                      </div>
+                      <p className={cn(
+                        "text-xs text-muted-foreground",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
+                        {t('admin.deadlineExtensions') || 'Deadline Extensions'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                    <CardContent className="pt-4">
+                      <div className={cn(
+                        "text-2xl font-bold text-[#211c37] dark:text-white",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                      )}>
+                        {auditLogStats.grade_updates || 0}
+                      </div>
+                      <p className={cn(
+                        "text-xs text-muted-foreground",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
+                        {t('admin.gradeUpdates') || 'Grade Updates'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                    <CardContent className="pt-4">
+                      <div className={cn(
+                        "text-2xl font-bold text-[#211c37] dark:text-white",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                      )}>
+                        {auditLogStats.entity_changes || 0}
+                      </div>
+                      <p className={cn(
+                        "text-xs text-muted-foreground",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
+                        {t('admin.entityChanges') || 'Entity Changes'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="space-y-2">
+                  <Label className={cn(
+                    "text-[#211c37] dark:text-white",
+                    getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                  )}>
+                    {t('admin.dateRange') || 'Date Range'}
+                  </Label>
+                  <DatePickerWithRange
+                    date={auditLogFilters.dateRange}
+                    onDateChange={(dateRange) => setAuditLogFilters({ ...auditLogFilters, dateRange })}
+                    placeholder={t('admin.selectDateRange') || 'Pick a date range'}
+                    className={cn(
+                      neoBrutalismMode ? "" : ""
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className={cn(
+                    "text-[#211c37] dark:text-white",
+                    getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                  )}>
+                    {t('admin.userId') || 'User ID'}
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder={t('admin.enterUserId') || 'Enter User ID'}
+                    value={auditLogFilters.university_id || ''}
+                    onChange={(e) => setAuditLogFilters({ 
+                      ...auditLogFilters, 
+                      university_id: e.target.value ? parseInt(e.target.value) : undefined 
+                    })}
+                    className={cn(
+                      "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
+                      getNeoBrutalismInputClasses(neoBrutalismMode)
+                    )}
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setAuditLogFilters({ dateRange: undefined, university_id: undefined })
+                      setAuditLogPage(1)
+                    }}
+                    className={cn(
+                      "w-full",
+                      neoBrutalismMode 
+                        ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline')
+                        : ""
+                    )}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    {t('admin.clearFilters') || 'Clear'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Audit Logs Table */}
+              {loadingAuditLogs ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#3bafa8] dark:text-[#3bafa8]" />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <ScrollArea className={cn(
+                    "h-[400px] rounded-md border",
+                    neoBrutalismMode 
+                      ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                      : "border-[#e5e7e7] dark:border-[#333]"
+                  )}>
+                    <div className="p-4">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t('admin.timestamp') || 'Timestamp'}</TableHead>
+                            <TableHead>{t('admin.user') || 'User'}</TableHead>
+                            <TableHead>{t('admin.action') || 'Action'}</TableHead>
+                            <TableHead>{t('admin.details') || 'Details'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {auditLogs.length > 0 ? (
+                            auditLogs.map((log: AuditLog) => (
+                              <TableRow key={log.LogID}>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                    <span className={cn(
+                                      "text-sm",
+                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                    )}>
+                                      {log.timestamp ? new Date(log.timestamp).toLocaleString() : '-'}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {log.University_ID ? (
+                                    <div>
+                                      <div className={cn(
+                                        "font-medium",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                      )}>
+                                        {log.Last_Name} {log.First_Name}
+                                      </div>
+                                      <div className={cn(
+                                        "text-xs text-muted-foreground",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>
+                                        ID: {log.University_ID} • {log.User_Role || 'unknown'}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className={cn(
+                                      "text-muted-foreground",
+                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                    )}>
+                                      {t('admin.system') || 'System'}
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="space-y-1">
+                                    {log.section_creation && (
+                                      <Badge className={cn(
+                                        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                                        neoBrutalismMode ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : ""
+                                      )}>
+                                        {t('admin.sectionCreation') || 'Section Creation'}
+                                      </Badge>
+                                    )}
+                                    {log.deadline_extensions && (
+                                      <Badge className={cn(
+                                        "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+                                        neoBrutalismMode ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : ""
+                                      )}>
+                                        {t('admin.deadlineExtension') || 'Deadline Extension'}
+                                      </Badge>
+                                    )}
+                                    {log.grade_updates && (
+                                      <Badge className={cn(
+                                        "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                                        neoBrutalismMode ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : ""
+                                      )}>
+                                        {t('admin.gradeUpdate') || 'Grade Update'}
+                                      </Badge>
+                                    )}
+                                    {log.affected_entities && (
+                                      <Badge className={cn(
+                                        "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+                                        neoBrutalismMode ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : ""
+                                      )}>
+                                        {t('admin.entityChange') || 'Entity Change'}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="space-y-1 max-w-md">
+                                    {log.section_creation && (
+                                      <div className={cn(
+                                        "text-xs",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>
+                                        <span className="font-medium">{t('admin.sectionCreation') || 'Section:'}</span> {log.section_creation}
+                                      </div>
+                                    )}
+                                    {log.deadline_extensions && (
+                                      <div className={cn(
+                                        "text-xs",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>
+                                        <span className="font-medium">{t('admin.deadlineExtension') || 'Deadline:'}</span> {log.deadline_extensions}
+                                      </div>
+                                    )}
+                                    {log.grade_updates && (
+                                      <div className={cn(
+                                        "text-xs",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>
+                                        <span className="font-medium">{t('admin.gradeUpdate') || 'Grade:'}</span> {log.grade_updates}
+                                      </div>
+                                    )}
+                                    {log.affected_entities && (
+                                      <div className={cn(
+                                        "text-xs",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>
+                                        <span className="font-medium">{t('admin.entities') || 'Entities:'}</span> {log.affected_entities}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={4} className="h-24 text-center">
+                                {t('admin.noAuditLogs') || 'No audit logs found'}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </ScrollArea>
+                  
+                  {/* Pagination */}
+                  {auditLogTotalPages > 1 && (
+                    <div className="flex items-center justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAuditLogPage(Math.max(1, auditLogPage - 1))}
+                        disabled={auditLogPage === 1}
+                        className={cn(
+                          neoBrutalismMode 
+                            ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline')
+                            : ""
+                        )}
+                      >
+                        {t('common.previous')}
+                      </Button>
+                      <span className={cn(
+                        "text-sm text-muted-foreground",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
+                        {t('admin.page') || 'Page'} {auditLogPage} / {auditLogTotalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAuditLogPage(Math.min(auditLogTotalPages, auditLogPage + 1))}
+                        disabled={auditLogPage >= auditLogTotalPages}
+                        className={cn(
+                          neoBrutalismMode 
+                            ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline')
+                            : ""
+                        )}
+                      >
+                        {t('common.next')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Advanced Statistics & Analytics */}
+        <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className={cn(
+                  "text-xl text-[#1f1d39] dark:text-white",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                )}>
+                  {t('admin.advancedStatistics') || 'Advanced Statistics & Analytics'}
+                </CardTitle>
+                <CardDescription className={cn(
+                  "text-[#85878d] dark:text-gray-400",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                )}>
+                  {t('admin.advancedStatisticsDescription') || 'Comprehensive analytics and insights'}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowAdvancedStatistics(!showAdvancedStatistics)}
+                className={cn(
+                  "gap-2",
+                  neoBrutalismMode 
+                    ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline')
+                    : ""
+                )}
+              >
+                <BarChart3 className="h-4 w-4" />
+                {showAdvancedStatistics ? (t('admin.hideStatistics') || 'Hide Statistics') : (t('admin.showStatistics') || 'Show Statistics')}
+              </Button>
+            </div>
+          </CardHeader>
+          {showAdvancedStatistics && (
+            <CardContent>
+              {loadingAdvancedStats ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#3bafa8] dark:text-[#3bafa8]" />
+                </div>
+              ) : (
+                <Tabs defaultValue="gpa" className="w-full">
+                  <TabsList className={cn(
+                    "grid w-full grid-cols-5 bg-gray-100 dark:bg-[#2a2a2a] mb-6",
+                    neoBrutalismMode && "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                  )}>
+                    <TabsTrigger value="gpa" className={cn(
+                      "data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1a1a]",
+                      neoBrutalismMode && "data-[state=active]:border-4 data-[state=active]:border-[#1a1a1a] dark:data-[state=active]:border-[#FFFBEB] data-[state=active]:rounded-none",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                    )}>
+                      {t('admin.gpaStatistics') || 'GPA Stats'}
+                    </TabsTrigger>
+                    <TabsTrigger value="enrollment" className={cn(
+                      "data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1a1a]",
+                      neoBrutalismMode && "data-[state=active]:border-4 data-[state=active]:border-[#1a1a1a] dark:data-[state=active]:border-[#FFFBEB] data-[state=active]:rounded-none",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                    )}>
+                      {t('admin.enrollment') || 'Enrollment'}
+                    </TabsTrigger>
+                    <TabsTrigger value="completion" className={cn(
+                      "data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1a1a]",
+                      neoBrutalismMode && "data-[state=active]:border-4 data-[state=active]:border-[#1a1a1a] dark:data-[state=active]:border-[#FFFBEB] data-[state=active]:rounded-none",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                    )}>
+                      {t('admin.completion') || 'Completion'}
+                    </TabsTrigger>
+                    <TabsTrigger value="performance" className={cn(
+                      "data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1a1a]",
+                      neoBrutalismMode && "data-[state=active]:border-4 data-[state=active]:border-[#1a1a1a] dark:data-[state=active]:border-[#FFFBEB] data-[state=active]:rounded-none",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                    )}>
+                      {t('admin.performance') || 'Performance'}
+                    </TabsTrigger>
+                    <TabsTrigger value="top" className={cn(
+                      "data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1a1a]",
+                      neoBrutalismMode && "data-[state=active]:border-4 data-[state=active]:border-[#1a1a1a] dark:data-[state=active]:border-[#FFFBEB] data-[state=active]:rounded-none",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                    )}>
+                      {t('admin.topPerformers') || 'Top'}
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* GPA Statistics Tab */}
+                  <TabsContent value="gpa" className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {/* GPA by Major */}
+                      <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                        <CardHeader>
+                          <CardTitle className={cn(
+                            "text-lg text-[#1f1d39] dark:text-white",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                          )}>
+                            {t('admin.gpaByMajor') || 'GPA by Major'}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {gpaByMajor.length > 0 ? (
+                            <div className="space-y-4">
+                              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                                <BarChart data={gpaByMajor}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                  <XAxis
+                                    dataKey="Major"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={80}
+                                    tick={{ fill: '#85878d', fontSize: 11 }}
+                                  />
+                                  <YAxis
+                                    tickLine={false}
+                                    axisLine={false}
+                                    domain={[0, 10]}
+                                    tick={{ fill: '#85878d', fontSize: 12 }}
+                                  />
+                                  <ChartTooltip 
+                                    content={<ChartTooltipContent />}
+                                    formatter={(value: number) => [value.toFixed(2), t('admin.averageGPA') || 'Average GPA']}
+                                  />
+                                  <Bar dataKey="AverageGPA" radius={[8, 8, 0, 0]}>
+                                    {gpaByMajor.map((entry: any, index: number) => (
+                                      <Cell 
+                                        key={`cell-${index}`} 
+                                        fill={
+                                          entry.AverageGPA >= 8.0 ? '#10b981' :
+                                          entry.AverageGPA >= 6.5 ? '#3b82f6' :
+                                          entry.AverageGPA >= 5.0 ? '#f59e0b' : '#ef4444'
+                                        }
+                                      />
+                                    ))}
+                                  </Bar>
+                                </BarChart>
+                              </ChartContainer>
+                              <div className="space-y-2">
+                                {gpaByMajor.map((stat: any) => (
+                                  <div key={stat.Major} className={cn(
+                                    "p-3 border rounded-lg",
+                                    neoBrutalismMode 
+                                      ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                      : "border-[#e5e7e7] dark:border-[#333]"
+                                  )}>
+                                    <div className="flex justify-between items-center">
+                                      <span className={cn(
+                                        "font-semibold",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                      )}>{stat.Major}</span>
+                                      <span className={cn(
+                                        "text-lg font-bold",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                      )}>{stat.AverageGPA.toFixed(2)}</span>
+                                    </div>
+                                    <div className={cn(
+                                      "text-xs text-muted-foreground mt-1",
+                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                    )}>
+                                      {stat.StudentCount} {t('admin.students')} • {t('admin.min')}: {stat.MinGPA.toFixed(2)} • {t('admin.max')}: {stat.MaxGPA.toFixed(2)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className={cn(
+                              "text-center text-muted-foreground py-4",
+                              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                            )}>{t('admin.noData') || 'No data available'}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* GPA by Department */}
+                      <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                        <CardHeader>
+                          <CardTitle className={cn(
+                            "text-lg text-[#1f1d39] dark:text-white",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                          )}>
+                            {t('admin.gpaByDepartment') || 'GPA by Department'}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {gpaByDepartment.length > 0 ? (
+                            <div className="space-y-4">
+                              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                                <BarChart data={gpaByDepartment}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                  <XAxis
+                                    dataKey="Department_Name"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={80}
+                                    tick={{ fill: '#85878d', fontSize: 11 }}
+                                  />
+                                  <YAxis
+                                    tickLine={false}
+                                    axisLine={false}
+                                    domain={[0, 10]}
+                                    tick={{ fill: '#85878d', fontSize: 12 }}
+                                  />
+                                  <ChartTooltip 
+                                    content={<ChartTooltipContent />}
+                                    formatter={(value: number) => [value.toFixed(2), t('admin.averageGPA') || 'Average GPA']}
+                                  />
+                                  <Bar dataKey="AverageGPA" radius={[8, 8, 0, 0]}>
+                                    {gpaByDepartment.map((entry: any, index: number) => (
+                                      <Cell 
+                                        key={`cell-${index}`} 
+                                        fill={
+                                          entry.AverageGPA >= 8.0 ? '#10b981' :
+                                          entry.AverageGPA >= 6.5 ? '#3b82f6' :
+                                          entry.AverageGPA >= 5.0 ? '#f59e0b' : '#ef4444'
+                                        }
+                                      />
+                                    ))}
+                                  </Bar>
+                                </BarChart>
+                              </ChartContainer>
+                              <div className="space-y-2">
+                                {gpaByDepartment.map((stat: any) => (
+                                  <div key={stat.Department_Name} className={cn(
+                                    "p-3 border rounded-lg",
+                                    neoBrutalismMode 
+                                      ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                      : "border-[#e5e7e7] dark:border-[#333]"
+                                  )}>
+                                    <div className="flex justify-between items-center">
+                                      <span className={cn(
+                                        "font-semibold",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                      )}>{stat.Department_Name}</span>
+                                      <span className={cn(
+                                        "text-lg font-bold",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                      )}>{stat.AverageGPA.toFixed(2)}</span>
+                                    </div>
+                                    <div className={cn(
+                                      "text-xs text-muted-foreground mt-1",
+                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                    )}>
+                                      {stat.StudentCount} {t('admin.students')} • {t('admin.min')}: {stat.MinGPA.toFixed(2)} • {t('admin.max')}: {stat.MaxGPA.toFixed(2)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className={cn(
+                              "text-center text-muted-foreground py-4",
+                              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                            )}>{t('admin.noData') || 'No data available'}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
+
+                  {/* Enrollment Statistics Tab */}
+                  <TabsContent value="enrollment" className="space-y-6">
+                    <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                      <CardHeader>
+                        <CardTitle className={cn(
+                          "text-lg text-[#1f1d39] dark:text-white",
+                          getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                        )}>
+                          {t('admin.courseEnrollment') || 'Course Enrollment Statistics'}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {enrollmentStats.length > 0 ? (
+                          <div className="space-y-4">
+                            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                              <BarChart data={enrollmentStats}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis
+                                  dataKey="Major"
+                                  tickLine={false}
+                                  axisLine={false}
+                                  angle={-45}
+                                  textAnchor="end"
+                                  height={80}
+                                  tick={{ fill: '#85878d', fontSize: 11 }}
+                                />
+                                <YAxis
+                                  tickLine={false}
+                                  axisLine={false}
+                                  tick={{ fill: '#85878d', fontSize: 12 }}
+                                />
+                                <ChartTooltip content={<ChartTooltipContent />} />
+                                <Legend />
+                                <Bar dataKey="TotalStudents" name={t('admin.totalStudents')} fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                                <Bar dataKey="TotalCourses" name={t('admin.totalCourses')} fill="#10b981" radius={[8, 8, 0, 0]} />
+                              </BarChart>
+                            </ChartContainer>
+                            <div className="space-y-2">
+                              {enrollmentStats.map((stat: any) => (
+                                <div key={stat.Major} className={cn(
+                                  "p-4 border rounded-lg",
+                                  neoBrutalismMode 
+                                    ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                    : "border-[#e5e7e7] dark:border-[#333]"
+                                )}>
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className={cn(
+                                      "font-semibold text-lg",
+                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                    )}>{stat.Major}</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div>
+                                      <span className={cn(
+                                        "text-muted-foreground",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>{t('admin.totalStudents')}:</span>
+                                      <p className={cn(
+                                        "font-bold text-lg",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                      )}>{stat.TotalStudents}</p>
+                                    </div>
+                                    <div>
+                                      <span className={cn(
+                                        "text-muted-foreground",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>{t('admin.totalCourses') || 'Courses'}:</span>
+                                      <p className={cn(
+                                        "font-bold text-lg",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                      )}>{stat.TotalCourses}</p>
+                                    </div>
+                                    <div>
+                                      <span className={cn(
+                                        "text-muted-foreground",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>{t('admin.enrollments') || 'Enrollments'}:</span>
+                                      <p className={cn(
+                                        "font-bold text-lg",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                      )}>{stat.TotalEnrollments}</p>
+                                    </div>
+                                    <div>
+                                      <span className={cn(
+                                        "text-muted-foreground",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>{t('admin.avgCoursesPerStudent') || 'Avg/Student'}:</span>
+                                      <p className={cn(
+                                        "font-bold text-lg",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                      )}>{stat.AvgCoursesPerStudent.toFixed(1)}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className={cn(
+                            "text-center text-muted-foreground py-4",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                          )}>{t('admin.noData') || 'No data available'}</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* Completion Rates Tab */}
+                  <TabsContent value="completion" className="space-y-6">
+                    <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                      <CardHeader>
+                        <CardTitle className={cn(
+                          "text-lg text-[#1f1d39] dark:text-white",
+                          getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                        )}>
+                          {t('admin.completionRates') || 'Completion Rates'}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {completionRates.length > 0 ? (
+                          <div className="space-y-6">
+                            <div className="grid gap-4 md:grid-cols-2">
+                              {completionRates.map((stat: any) => (
+                                <Card key={stat.Type} className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                                  <CardHeader>
+                                    <CardTitle className={cn(
+                                      "text-lg",
+                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                    )}>
+                                      {stat.Type}
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="space-y-4">
+                                      <div>
+                                        <div className="flex justify-between mb-2">
+                                          <span className={cn(
+                                            "text-sm text-muted-foreground",
+                                            getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                          )}>{t('admin.completionRate') || 'Completion Rate'}</span>
+                                          <span className={cn(
+                                            "font-bold text-lg",
+                                            getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                          )}>{stat.CompletionRate.toFixed(1)}%</span>
+                                        </div>
+                                        <div className={cn(
+                                          "h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden",
+                                          neoBrutalismMode ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : ""
+                                        )}>
+                                          <div 
+                                            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all"
+                                            style={{ width: `${stat.CompletionRate}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                      {stat.Type === 'Quiz' && stat.PassRate > 0 && (
+                                        <div>
+                                          <div className="flex justify-between mb-2">
+                                            <span className={cn(
+                                              "text-sm text-muted-foreground",
+                                              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                            )}>{t('admin.passRate') || 'Pass Rate'}</span>
+                                            <span className={cn(
+                                              "font-bold text-lg",
+                                              getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                            )}>{stat.PassRate.toFixed(1)}%</span>
+                                          </div>
+                                          <div className={cn(
+                                            "h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden",
+                                            neoBrutalismMode ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : ""
+                                          )}>
+                                            <div 
+                                              className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all"
+                                              style={{ width: `${stat.PassRate}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+                                      <div className={cn(
+                                        "grid grid-cols-3 gap-2 pt-2 border-t",
+                                        neoBrutalismMode ? "border-2" : ""
+                                      )}>
+                                        <div>
+                                          <span className={cn(
+                                            "text-xs text-muted-foreground",
+                                            getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                          )}>{t('admin.total') || 'Total'}</span>
+                                          <p className={cn(
+                                            "font-bold",
+                                            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                          )}>{stat.Total}</p>
+                                        </div>
+                                        <div>
+                                          <span className={cn(
+                                            "text-xs text-muted-foreground",
+                                            getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                          )}>{t('admin.completed') || 'Completed'}</span>
+                                          <p className={cn(
+                                            "font-bold",
+                                            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                          )}>{stat.Completed}</p>
+                                        </div>
+                                        {stat.Type === 'Quiz' && (
+                                          <div>
+                                            <span className={cn(
+                                              "text-xs text-muted-foreground",
+                                              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                            )}>{t('admin.passed') || 'Passed'}</span>
+                                            <p className={cn(
+                                              "font-bold",
+                                              getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                            )}>{stat.Passed}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className={cn(
+                            "text-center text-muted-foreground py-4",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                          )}>{t('admin.noData') || 'No data available'}</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* Performance Over Time Tab */}
+                  <TabsContent value="performance" className="space-y-6">
+                    <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className={cn(
+                            "text-lg text-[#1f1d39] dark:text-white",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                          )}>
+                            {t('admin.performanceOverTime') || 'Performance Over Time'}
+                          </CardTitle>
+                          <Select value={performanceGroupBy} onValueChange={(value: 'Semester' | 'Month') => setPerformanceGroupBy(value)}>
+                            <SelectTrigger className={cn(
+                              "w-[150px]",
+                              getNeoBrutalismInputClasses(neoBrutalismMode)
+                            )}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Semester">{t('admin.bySemester') || 'By Semester'}</SelectItem>
+                              <SelectItem value="Month">{t('admin.byMonth') || 'By Month'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {performanceOverTime.length > 0 ? (
+                          <div className="space-y-4">
+                            <ChartContainer config={chartConfig} className="h-[400px] w-full">
+                              <LineChart data={performanceOverTime}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis
+                                  dataKey="Period"
+                                  tickLine={false}
+                                  axisLine={false}
+                                  tick={{ fill: '#85878d', fontSize: 12 }}
+                                />
+                                <YAxis
+                                  tickLine={false}
+                                  axisLine={false}
+                                  domain={[0, 10]}
+                                  tick={{ fill: '#85878d', fontSize: 12 }}
+                                />
+                                <ChartTooltip 
+                                  content={<ChartTooltipContent />}
+                                  formatter={(value: number) => [value.toFixed(2), t('admin.averageGPA') || 'Average GPA']}
+                                />
+                                <Line
+                                  type="monotone"
+                                  dataKey="AverageGPA"
+                                  stroke="#3b82f6"
+                                  strokeWidth={3}
+                                  dot={{ fill: "#3b82f6", r: 5 }}
+                                  activeDot={{ r: 7 }}
+                                  connectNulls={true}
+                                />
+                              </LineChart>
+                            </ChartContainer>
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                              {performanceOverTime.map((stat: any) => (
+                                <Card key={stat.Period} className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                                  <CardContent className="pt-4">
+                                    <div className={cn(
+                                      "text-sm text-muted-foreground mb-2",
+                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                    )}>{stat.Period}</div>
+                                    <div className={cn(
+                                      "text-2xl font-bold mb-1",
+                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                    )}>{stat.AverageGPA.toFixed(2)}</div>
+                                    <div className={cn(
+                                      "text-xs text-muted-foreground",
+                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                    )}>
+                                      {stat.StudentCount} {t('admin.students')} • {stat.CourseCount} {t('admin.courses')}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className={cn(
+                            "text-center text-muted-foreground py-4",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                          )}>{t('admin.noData') || 'No data available'}</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* Top Performers Tab */}
+                  <TabsContent value="top" className="space-y-6">
+                    <div className="grid gap-6 md:grid-cols-2">
+                      {/* Top Students */}
+                      <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                        <CardHeader>
+                          <CardTitle className={cn(
+                            "text-lg text-[#1f1d39] dark:text-white",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                          )}>
+                            {t('admin.topStudents') || 'Top Students'}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {topStudents.length > 0 ? (
+                            <div className="space-y-3">
+                              {topStudents.map((student: any, index: number) => (
+                                <div key={student.University_ID} className={cn(
+                                  "p-4 border rounded-lg",
+                                  neoBrutalismMode 
+                                    ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                    : "border-[#e5e7e7] dark:border-[#333]"
+                                )}>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                      <div className={cn(
+                                        "w-8 h-8 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center rounded-full",
+                                        neoBrutalismMode ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : ""
+                                      )}>
+                                        <span className={cn(
+                                          "font-bold text-blue-600 dark:text-blue-400",
+                                          getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                        )}>#{index + 1}</span>
+                                      </div>
+                                      <div>
+                                        <div className={cn(
+                                          "font-semibold",
+                                          getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                        )}>
+                                          {student.Last_Name} {student.First_Name}
+                                        </div>
+                                        <div className={cn(
+                                          "text-xs text-muted-foreground",
+                                          getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                        )}>
+                                          ID: {student.University_ID} • {student.Major}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className={cn(
+                                        "text-2xl font-bold text-blue-600 dark:text-blue-400",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                      )}>
+                                        {student.CumulativeGPA.toFixed(2)}
+                                      </div>
+                                      <div className={cn(
+                                        "text-xs text-muted-foreground",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>
+                                        {student.CourseCount} {t('admin.courses') || 'courses'} • {student.TotalCredits} {t('admin.credits') || 'credits'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className={cn(
+                              "text-center text-muted-foreground py-4",
+                              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                            )}>{t('admin.noData') || 'No data available'}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Top Tutors */}
+                      <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                        <CardHeader>
+                          <CardTitle className={cn(
+                            "text-lg text-[#1f1d39] dark:text-white",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                          )}>
+                            {t('admin.topTutors') || 'Top Tutors'}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {topTutors.length > 0 ? (
+                            <div className="space-y-3">
+                              {topTutors.map((tutor: any, index: number) => (
+                                <div key={tutor.University_ID} className={cn(
+                                  "p-4 border rounded-lg",
+                                  neoBrutalismMode 
+                                    ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                    : "border-[#e5e7e7] dark:border-[#333]"
+                                )}>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                      <div className={cn(
+                                        "w-8 h-8 bg-green-100 dark:bg-green-900/30 flex items-center justify-center rounded-full",
+                                        neoBrutalismMode ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : ""
+                                      )}>
+                                        <span className={cn(
+                                          "font-bold text-green-600 dark:text-green-400",
+                                          getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                        )}>#{index + 1}</span>
+                                      </div>
+                                      <div>
+                                        <div className={cn(
+                                          "font-semibold",
+                                          getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                        )}>
+                                          {tutor.Last_Name} {tutor.First_Name}
+                                        </div>
+                                        <div className={cn(
+                                          "text-xs text-muted-foreground",
+                                          getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                        )}>
+                                          {tutor.Department_Name || t('admin.noDepartment') || 'No Department'} • {tutor.Academic_Rank || ''}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-2 mt-2">
+                                    <div>
+                                      <span className={cn(
+                                        "text-xs text-muted-foreground",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>{t('admin.sections') || 'Sections'}</span>
+                                      <p className={cn(
+                                        "font-bold",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                      )}>{tutor.SectionCount}</p>
+                                    </div>
+                                    <div>
+                                      <span className={cn(
+                                        "text-xs text-muted-foreground",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>{t('admin.students')}</span>
+                                      <p className={cn(
+                                        "font-bold",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                      )}>{tutor.StudentCount}</p>
+                                    </div>
+                                    <div>
+                                      <span className={cn(
+                                        "text-xs text-muted-foreground",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                      )}>{t('admin.avgGPA') || 'Avg GPA'}</span>
+                                      <p className={cn(
+                                        "font-bold",
+                                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                      )}>{tutor.AverageStudentGPA ? tutor.AverageStudentGPA.toFixed(2) : 'N/A'}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className={cn(
+                              "text-center text-muted-foreground py-4",
+                              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                            )}>{t('admin.noData') || 'No data available'}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              )}
+            </CardContent>
+          )}
         </Card>
 
         {/* Add/Edit User Dialog - Keep existing dialog code */}
@@ -2383,7 +3680,7 @@ export default function UserManagementPage() {
                   const gpaChartConfig = {
                     gpa: {
                       label: t('admin.courseGPA'),
-                      color: 'hsl(var(--chart-1))',
+                      color: '#3b82f6',
                     },
                   } satisfies ChartConfig
                   
@@ -2492,10 +3789,13 @@ export default function UserManagementPage() {
                                   <Line
                                     type="monotone"
                                     dataKey="gpa"
-                                    stroke="hsl(var(--chart-1))"
+                                    stroke="var(--color-gpa, #3b82f6)"
                                     strokeWidth={3}
-                                    dot={{ fill: "hsl(var(--chart-1))", r: 5 }}
-                                    activeDot={{ r: 7 }}
+                                    dot={{ fill: "var(--color-gpa, #3b82f6)", r: 5, strokeWidth: 2, stroke: "var(--color-gpa, #3b82f6)" }}
+                                    activeDot={{ r: 7, fill: "var(--color-gpa, #3b82f6)" }}
+                                    connectNulls={true}
+                                    isAnimationActive={true}
+                                    animationDuration={300}
                                   />
                                 </LineChart>
                               </ChartContainer>

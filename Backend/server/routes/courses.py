@@ -17,8 +17,8 @@ def get_courses():
             # Tuple access: Course_ID, Name, Credit, Start_Date
             result.append({
                 'Course_ID': course[0],
-                'Course_Name': course[1],  # Name
-                'Credits': course[2],      # Credit
+                'Name': course[1] if course[1] else '',  # Name
+                'Credit': course[2] if course[2] is not None else 0,  # Credit
                 'Start_Date': str(course[3]) if course[3] else None,
             })
 
@@ -42,8 +42,8 @@ def get_course(id):
         # Tuple access: Course_ID, Name, Credit, Start_Date
         return jsonify({
             'Course_ID': course[0],
-            'Course_Name': course[1],  # Name
-            'Credits': course[2],      # Credit
+            'Name': course[1] if course[1] else '',  # Name
+            'Credit': course[2] if course[2] is not None else 0,  # Credit
             'Start_Date': str(course[3]) if course[3] else None,
         })
     except Exception as e:

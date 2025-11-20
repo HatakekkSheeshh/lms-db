@@ -176,6 +176,97 @@ export interface Room {
   Capacity: number | null
 }
 
+// Audit Log
+export interface AuditLog {
+  LogID: number
+  timestamp: string | null
+  affected_entities: string | null
+  section_creation: string | null
+  deadline_extensions: string | null
+  grade_updates: string | null
+  University_ID: number | null
+  First_Name: string | null
+  Last_Name: string | null
+  Email: string | null
+  User_Role: string | null
+}
+
+// Audit Log Statistics
+export interface AuditLogStatistics {
+  total_logs: number
+  unique_users: number
+  section_creations: number
+  deadline_extensions: number
+  grade_updates: number
+  entity_changes: number
+}
+
+// Advanced Statistics
+export interface GPAStatisticsByMajor {
+  Major: string
+  StudentCount: number
+  AverageGPA: number
+  MinGPA: number
+  MaxGPA: number
+  StdDevGPA: number
+}
+
+export interface GPAStatisticsByDepartment {
+  Department_Name: string
+  StudentCount: number
+  AverageGPA: number
+  MinGPA: number
+  MaxGPA: number
+  StdDevGPA: number
+}
+
+export interface CourseEnrollmentStatistics {
+  Major: string
+  TotalStudents: number
+  TotalCourses: number
+  TotalEnrollments: number
+  AvgCoursesPerStudent: number
+}
+
+export interface CompletionRateStatistics {
+  Type: 'Quiz' | 'Assignment'
+  Total: number
+  Completed: number
+  Passed: number
+  CompletionRate: number
+  PassRate: number
+}
+
+export interface PerformanceOverTime {
+  Period: string
+  StudentCount: number
+  CourseCount: number
+  AverageGPA: number
+  MinGPA: number
+  MaxGPA: number
+}
+
+export interface TopStudent {
+  University_ID: number
+  First_Name: string
+  Last_Name: string
+  Major: string
+  CumulativeGPA: number
+  CourseCount: number
+  TotalCredits: number
+}
+
+export interface TopTutor {
+  University_ID: number
+  First_Name: string
+  Last_Name: string
+  Department_Name: string | null
+  Academic_Rank: string | null
+  SectionCount: number
+  StudentCount: number
+  AverageStudentGPA: number | null
+}
+
 export const adminService = {
   // Statistics
   async getStatistics(): Promise<Statistics> {
@@ -482,6 +573,93 @@ export const adminService = {
   async createRoom(room: Omit<Room, 'Room_ID' | 'Building_Name'>): Promise<Room> {
     const response = await apiClient.post('/admin/rooms', room)
     return response.data.room
+  },
+
+  // Audit Logs
+  async getAuditLogs(params?: {
+    start_date?: string
+    end_date?: string
+    university_id?: number
+    page?: number
+    page_size?: number
+  }): Promise<{
+    logs: AuditLog[]
+    total_count: number
+    page: number
+    page_size: number
+    total_pages: number
+  }> {
+    const response = await apiClient.get('/admin/audit-logs', { params })
+    return response.data
+  },
+
+  async getAuditLogsByUser(
+    universityId: number,
+    params?: {
+      start_date?: string
+      end_date?: string
+      page?: number
+      page_size?: number
+    }
+  ): Promise<{
+    logs: AuditLog[]
+    total_count: number
+    page: number
+    page_size: number
+    total_pages: number
+  }> {
+    const response = await apiClient.get(`/admin/audit-logs/${universityId}`, { params })
+    return response.data
+  },
+
+  async getAuditLogStatistics(params?: {
+    start_date?: string
+    end_date?: string
+  }): Promise<AuditLogStatistics> {
+    const response = await apiClient.get('/admin/audit-logs/statistics', { params })
+    return response.data
+  },
+
+  // Advanced Statistics & Analytics
+  async getGPAStatisticsByMajor(): Promise<GPAStatisticsByMajor[]> {
+    const response = await apiClient.get('/admin/statistics/gpa-by-major')
+    return response.data
+  },
+
+  async getGPAStatisticsByDepartment(): Promise<GPAStatisticsByDepartment[]> {
+    const response = await apiClient.get('/admin/statistics/gpa-by-department')
+    return response.data
+  },
+
+  async getCourseEnrollmentStatistics(): Promise<CourseEnrollmentStatistics[]> {
+    const response = await apiClient.get('/admin/statistics/course-enrollment')
+    return response.data
+  },
+
+  async getCompletionRateStatistics(): Promise<CompletionRateStatistics[]> {
+    const response = await apiClient.get('/admin/statistics/completion-rates')
+    return response.data
+  },
+
+  async getPerformanceOverTime(groupBy: 'Semester' | 'Month' = 'Semester'): Promise<PerformanceOverTime[]> {
+    const response = await apiClient.get('/admin/statistics/performance-over-time', {
+      params: { group_by: groupBy }
+    })
+    return response.data
+  },
+
+  async getTopStudents(topN: number = 10): Promise<TopStudent[]> {
+    const response = await apiClient.get('/admin/statistics/top-students', {
+      params: { top_n: topN }
+    })
+    return response.data
+  },
+
+  async getTopTutors(topN: number = 10): Promise<TopTutor[]> {
+    const response = await apiClient.get('/admin/statistics/top-tutors', {
+      params: { top_n: topN }
+    })
+    return response.data
   },
 }
 

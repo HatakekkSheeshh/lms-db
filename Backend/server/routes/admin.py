@@ -1807,3 +1807,372 @@ def get_user_details(university_id):
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'Failed to get user details: {str(e)}'}), 500
 
+# ==================== AUDIT LOG MANAGEMENT ====================
+
+@admin_bp.route('/audit-logs', methods=['GET'])
+def get_audit_logs():
+    """Get audit logs with filters - Using stored procedure"""
+    try:
+        start_date = request.args.get('start_date', None)
+        end_date = request.args.get('end_date', None)
+        university_id = request.args.get('university_id', None, type=int)
+        page = request.args.get('page', 1, type=int)
+        page_size = request.args.get('page_size', 50, type=int)
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetAllAuditLogs %s, %s, %s, %s, %s', (
+            start_date,
+            end_date,
+            university_id,
+            page,
+            page_size
+        ))
+        
+        logs = cursor.fetchall()
+        
+        # Get total count (second result set)
+        cursor.nextset()
+        total_result = cursor.fetchone()
+        total_count = total_result[0] if total_result else 0
+        
+        conn.close()
+        
+        result = []
+        for log in logs:
+            # Tuple: LogID, timestamp, affected_entities, section_creation, deadline_extensions, grade_updates, University_ID, First_Name, Last_Name, Email, User_Role
+            result.append({
+                'LogID': log[0],
+                'timestamp': str(log[1]) if log[1] else None,
+                'affected_entities': log[2],
+                'section_creation': log[3],
+                'deadline_extensions': log[4],
+                'grade_updates': log[5],
+                'University_ID': log[6],
+                'First_Name': log[7],
+                'Last_Name': log[8],
+                'Email': log[9],
+                'User_Role': log[10],
+            })
+        
+        return jsonify({
+            'logs': result,
+            'total_count': total_count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total_count + page_size - 1) // page_size if page_size > 0 else 0
+        })
+    except Exception as e:
+        print(f'Get audit logs error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get audit logs: {str(e)}'}), 500
+
+@admin_bp.route('/audit-logs/<int:university_id>', methods=['GET'])
+def get_audit_logs_by_user(university_id):
+    """Get audit logs for a specific user - Using stored procedure"""
+    try:
+        start_date = request.args.get('start_date', None)
+        end_date = request.args.get('end_date', None)
+        page = request.args.get('page', 1, type=int)
+        page_size = request.args.get('page_size', 50, type=int)
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetAuditLogsByUser %s, %s, %s, %s, %s', (
+            university_id,
+            start_date,
+            end_date,
+            page,
+            page_size
+        ))
+        
+        logs = cursor.fetchall()
+        
+        # Get total count (second result set)
+        cursor.nextset()
+        total_result = cursor.fetchone()
+        total_count = total_result[0] if total_result else 0
+        
+        conn.close()
+        
+        result = []
+        for log in logs:
+            # Tuple: LogID, timestamp, affected_entities, section_creation, deadline_extensions, grade_updates, University_ID, First_Name, Last_Name, Email, User_Role
+            result.append({
+                'LogID': log[0],
+                'timestamp': str(log[1]) if log[1] else None,
+                'affected_entities': log[2],
+                'section_creation': log[3],
+                'deadline_extensions': log[4],
+                'grade_updates': log[5],
+                'University_ID': log[6],
+                'First_Name': log[7],
+                'Last_Name': log[8],
+                'Email': log[9],
+                'User_Role': log[10],
+            })
+        
+        return jsonify({
+            'logs': result,
+            'total_count': total_count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total_count + page_size - 1) // page_size if page_size > 0 else 0
+        })
+    except Exception as e:
+        print(f'Get audit logs by user error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get audit logs: {str(e)}'}), 500
+
+@admin_bp.route('/audit-logs/statistics', methods=['GET'])
+def get_audit_log_statistics():
+    """Get audit log statistics - Using stored procedure"""
+    try:
+        start_date = request.args.get('start_date', None)
+        end_date = request.args.get('end_date', None)
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetAuditLogStatistics %s, %s', (
+            start_date,
+            end_date
+        ))
+        
+        stats = cursor.fetchone()
+        conn.close()
+        
+        # Tuple: total_logs, unique_users, section_creations, deadline_extensions, grade_updates, entity_changes
+        result = {
+            'total_logs': int(stats[0]) if stats[0] else 0,
+            'unique_users': int(stats[1]) if stats[1] else 0,
+            'section_creations': int(stats[2]) if stats[2] else 0,
+            'deadline_extensions': int(stats[3]) if stats[3] else 0,
+            'grade_updates': int(stats[4]) if stats[4] else 0,
+            'entity_changes': int(stats[5]) if stats[5] else 0,
+        }
+        
+        return jsonify(result)
+    except Exception as e:
+        print(f'Get audit log statistics error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get audit log statistics: {str(e)}'}), 500
+
+# ==================== ADVANCED STATISTICS & ANALYTICS ====================
+
+@admin_bp.route('/statistics/gpa-by-major', methods=['GET'])
+def get_gpa_statistics_by_major():
+    """Get GPA statistics grouped by major - Using stored procedure"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetGPAStatisticsByMajor')
+        results = cursor.fetchall()
+        conn.close()
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Major': row[0],
+                'StudentCount': int(row[1]) if row[1] else 0,
+                'AverageGPA': float(row[2]) if row[2] else 0,
+                'MinGPA': float(row[3]) if row[3] else 0,
+                'MaxGPA': float(row[4]) if row[4] else 0,
+                'StdDevGPA': float(row[5]) if row[5] else 0,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get GPA statistics by major error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get GPA statistics: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/gpa-by-department', methods=['GET'])
+def get_gpa_statistics_by_department():
+    """Get GPA statistics grouped by department - Using stored procedure"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetGPAStatisticsByDepartment')
+        results = cursor.fetchall()
+        conn.close()
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Department_Name': row[0],
+                'StudentCount': int(row[1]) if row[1] else 0,
+                'AverageGPA': float(row[2]) if row[2] else 0,
+                'MinGPA': float(row[3]) if row[3] else 0,
+                'MaxGPA': float(row[4]) if row[4] else 0,
+                'StdDevGPA': float(row[5]) if row[5] else 0,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get GPA statistics by department error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get GPA statistics: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/course-enrollment', methods=['GET'])
+def get_course_enrollment_statistics():
+    """Get course enrollment statistics - Using stored procedure"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetCourseEnrollmentStatistics')
+        results = cursor.fetchall()
+        conn.close()
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Major': row[0],
+                'TotalStudents': int(row[1]) if row[1] else 0,
+                'TotalCourses': int(row[2]) if row[2] else 0,
+                'TotalEnrollments': int(row[3]) if row[3] else 0,
+                'AvgCoursesPerStudent': float(row[4]) if row[4] else 0,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get course enrollment statistics error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get enrollment statistics: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/completion-rates', methods=['GET'])
+def get_completion_rate_statistics():
+    """Get completion rate statistics for quizzes and assignments - Using stored procedure"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetCompletionRateStatistics')
+        results = cursor.fetchall()
+        conn.close()
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Type': row[0],
+                'Total': int(row[1]) if row[1] else 0,
+                'Completed': int(row[2]) if row[2] else 0,
+                'Passed': int(row[3]) if row[3] else 0,
+                'CompletionRate': float(row[4]) if row[4] else 0,
+                'PassRate': float(row[5]) if row[5] else 0,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get completion rate statistics error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get completion rate statistics: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/performance-over-time', methods=['GET'])
+def get_performance_over_time():
+    """Get performance statistics over time - Using stored procedure"""
+    try:
+        group_by = request.args.get('group_by', 'Semester')  # 'Semester' or 'Month'
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetPerformanceOverTime %s', (group_by,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Period': row[0],
+                'StudentCount': int(row[1]) if row[1] else 0,
+                'CourseCount': int(row[2]) if row[2] else 0,
+                'AverageGPA': float(row[3]) if row[3] else 0,
+                'MinGPA': float(row[4]) if row[4] else 0,
+                'MaxGPA': float(row[5]) if row[5] else 0,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get performance over time error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get performance statistics: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/top-students', methods=['GET'])
+def get_top_students():
+    """Get top students by GPA - Using stored procedure"""
+    try:
+        top_n = request.args.get('top_n', 10, type=int)
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetTopStudents %s', (top_n,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        students = []
+        for row in results:
+            students.append({
+                'University_ID': int(row[0]),
+                'First_Name': row[1],
+                'Last_Name': row[2],
+                'Major': row[3],
+                'CumulativeGPA': float(row[4]) if row[4] else 0,
+                'CourseCount': int(row[5]) if row[5] else 0,
+                'TotalCredits': float(row[6]) if row[6] else 0,
+            })
+        
+        return jsonify(students)
+    except Exception as e:
+        print(f'Get top students error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get top students: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/top-tutors', methods=['GET'])
+def get_top_tutors():
+    """Get top tutors by student count and average GPA - Using stored procedure"""
+    try:
+        top_n = request.args.get('top_n', 10, type=int)
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetTopTutors %s', (top_n,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        tutors = []
+        for row in results:
+            tutors.append({
+                'University_ID': int(row[0]),
+                'First_Name': row[1],
+                'Last_Name': row[2],
+                'Department_Name': row[3],
+                'Academic_Rank': row[4],
+                'SectionCount': int(row[5]) if row[5] else 0,
+                'StudentCount': int(row[6]) if row[6] else 0,
+                'AverageStudentGPA': float(row[7]) if row[7] else 0,
+            })
+        
+        return jsonify(tutors)
+    except Exception as e:
+        print(f'Get top tutors error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get top tutors: {str(e)}'}), 500
+

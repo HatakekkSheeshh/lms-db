@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
+import type { DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -254,6 +255,79 @@ export function DatePicker({
         />
       </PopoverContent>
     </Popover>
+  )
+}
+
+interface DatePickerWithRangeProps {
+  date?: DateRange
+  onDateChange: (date: DateRange | undefined) => void
+  placeholder?: string
+  className?: string
+  disabled?: boolean
+  minDate?: Date
+  maxDate?: Date
+}
+
+export function DatePickerWithRange({
+  date,
+  onDateChange,
+  placeholder = "Pick a date range",
+  className,
+  disabled = false,
+  minDate,
+  maxDate,
+}: DatePickerWithRangeProps) {
+  return (
+    <div className={cn("grid gap-2", className)}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id="date"
+            variant="outline"
+            disabled={disabled}
+            className={cn(
+              "w-full justify-start text-left font-normal border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#2a2a2a] hover:bg-gray-50 dark:hover:bg-[#2a2a2a]",
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date?.from ? (
+              date.to ? (
+                <>
+                  {format(date.from, "LLL dd, y")} -{" "}
+                  {format(date.to, "LLL dd, y")}
+                </>
+              ) : (
+                format(date.from, "LLL dd, y")
+              )
+            ) : (
+              <span className="text-[#676767] dark:text-gray-400">{placeholder}</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0 bg-white dark:bg-[#1a1a1a] border-[#e5e7e7] dark:border-[#333]" align="start">
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={date?.from}
+            selected={date}
+            onSelect={onDateChange}
+            numberOfMonths={2}
+            captionLayout="label"
+            disabled={
+              minDate || maxDate
+                ? (date) => {
+                    if (minDate && date < minDate) return true
+                    if (maxDate && date > maxDate) return true
+                    return false
+                  }
+                : undefined
+            }
+            className="bg-white dark:bg-[#1a1a1a]"
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
   )
 }
 

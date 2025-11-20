@@ -27,6 +27,9 @@ def deploy_procedures():
         'update_user_role.sql',
         'reset_user_password.sql',
         'get_user_details.sql',
+        'filter_users.sql',
+        'audit_log_queries.sql',
+        'advanced_statistics.sql',
     ]
     
     conn = None
