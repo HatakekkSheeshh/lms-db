@@ -8,22 +8,26 @@ admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/courses', methods=['GET'])
 def get_all_courses():
-    """Get all courses - Using stored procedure"""
+    """Get all courses with statistics - Using stored procedure GetAllCoursesWithStats"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('EXEC GetAllCourses')
+        # Use GetAllCoursesWithStats to get courses with section, student, and tutor counts
+        cursor.execute('EXEC GetAllCoursesWithStats')
         courses = cursor.fetchall()
         conn.close()
 
         result = []
         for course in courses:
-            # Tuple access: Course_ID, Name, Credit, Start_Date
+            # Tuple access: Course_ID, Name, Credit, Start_Date, SectionCount, StudentCount, TutorCount
             result.append({
                 'Course_ID': course[0],
                 'Name': course[1],
-                'Credit': course[2],
+                'Credit': course[2] if course[2] is not None else None,
                 'Start_Date': str(course[3]) if course[3] else None,
+                'SectionCount': int(course[4]) if len(course) > 4 and course[4] is not None else 0,
+                'StudentCount': int(course[5]) if len(course) > 5 and course[5] is not None else 0,
+                'TutorCount': int(course[6]) if len(course) > 6 and course[6] is not None else 0,
             })
 
         return jsonify(result)

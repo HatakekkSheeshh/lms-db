@@ -16,6 +16,45 @@ BEGIN
 END
 GO
 
+-- ==================== GET ALL COURSES WITH STATISTICS ====================
+-- Description: Get all courses with section, student, and tutor counts for course management table
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetAllCoursesWithStats]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[GetAllCoursesWithStats]
+GO
+
+CREATE PROCEDURE [dbo].[GetAllCoursesWithStats]
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        c.Course_ID,
+        c.Name,
+        c.Credit,
+        c.Start_Date,
+        -- Count distinct sections for this course
+        (SELECT COUNT(*) 
+         FROM [Section] s 
+         WHERE s.Course_ID = c.Course_ID) as SectionCount,
+        -- Count distinct students enrolled in this course across all sections
+        (SELECT COUNT(DISTINCT a.University_ID) 
+         FROM [Assessment] a 
+         INNER JOIN [Section] s ON a.Section_ID = s.Section_ID 
+             AND a.Course_ID = s.Course_ID 
+             AND a.Semester = s.Semester
+         WHERE s.Course_ID = c.Course_ID) as StudentCount,
+        -- Count distinct tutors teaching this course across all sections
+        (SELECT COUNT(DISTINCT t.University_ID) 
+         FROM [Teaches] t 
+         INNER JOIN [Section] s ON t.Section_ID = s.Section_ID 
+             AND t.Course_ID = s.Course_ID 
+             AND t.Semester = s.Semester
+         WHERE s.Course_ID = c.Course_ID) as TutorCount
+    FROM [Course] c
+    ORDER BY c.Course_ID;
+END
+GO
+
 -- ==================== CREATE COURSE ====================
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[CreateCourse]') AND type in (N'P', N'PC'))
     DROP PROCEDURE [dbo].[CreateCourse]

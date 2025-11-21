@@ -4,7 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Search, Filter, X } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { DatePicker } from '@/components/ui/date-time-picker'
+import { Search, Filter, X, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { 
   useNeoBrutalismMode, 
@@ -29,6 +37,7 @@ interface AdvancedSearchPanelProps {
   onFiltersChange: (filters: SearchFilters) => void
   onSearch: () => void
   onReset: () => void
+  onAddCourse?: () => void
 }
 
 export default function AdvancedSearchPanel({
@@ -36,6 +45,7 @@ export default function AdvancedSearchPanel({
   onFiltersChange,
   onSearch,
   onReset,
+  onAddCourse,
 }: AdvancedSearchPanelProps) {
   const { t } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(false)
@@ -46,6 +56,18 @@ export default function AdvancedSearchPanel({
   }
 
   const hasActiveFilters = Object.values(filters).some(v => v !== undefined && v !== '')
+
+  // Convert string dates to Date objects for DatePicker
+  const startDateFrom = filters.start_date_from ? new Date(filters.start_date_from) : undefined
+  const startDateTo = filters.start_date_to ? new Date(filters.start_date_to) : undefined
+
+  const handleStartDateFromChange = (date: Date | undefined) => {
+    updateFilter('start_date_from', date ? date.toISOString().split('T')[0] : undefined)
+  }
+
+  const handleStartDateToChange = (date: Date | undefined) => {
+    updateFilter('start_date_to', date ? date.toISOString().split('T')[0] : undefined)
+  }
 
   return (
     <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
@@ -157,14 +179,17 @@ export default function AdvancedSearchPanel({
                 )}>
                   {t('admin.startDateFrom')}
                 </Label>
-                <Input
-                  type="date"
-                  value={filters.start_date_from || ''}
-                  onChange={(e) => updateFilter('start_date_from', e.target.value || undefined)}
+                <DatePicker
+                  date={startDateFrom}
+                  onDateChange={handleStartDateFromChange}
+                  placeholder={t('admin.selectDate') || "Select date"}
                   className={cn(
-                    "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
-                    getNeoBrutalismInputClasses(neoBrutalismMode)
+                    "w-full",
+                    neoBrutalismMode 
+                      ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                      : ""
                   )}
+                  maxDate={startDateTo}
                 />
               </div>
               <div className="space-y-2">
@@ -174,14 +199,17 @@ export default function AdvancedSearchPanel({
                 )}>
                   {t('admin.startDateTo')}
                 </Label>
-                <Input
-                  type="date"
-                  value={filters.start_date_to || ''}
-                  onChange={(e) => updateFilter('start_date_to', e.target.value || undefined)}
+                <DatePicker
+                  date={startDateTo}
+                  onDateChange={handleStartDateToChange}
+                  placeholder={t('admin.selectDate') || "Select date"}
                   className={cn(
-                    "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
-                    getNeoBrutalismInputClasses(neoBrutalismMode)
+                    "w-full",
+                    neoBrutalismMode 
+                      ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                      : ""
                   )}
+                  minDate={startDateFrom}
                 />
               </div>
 
@@ -193,20 +221,29 @@ export default function AdvancedSearchPanel({
                 )}>
                   {t('admin.hasSections')}
                 </Label>
-                <select
-                  value={filters.has_sections === undefined ? '' : filters.has_sections ? 'true' : 'false'}
-                  onChange={(e) => updateFilter('has_sections', e.target.value === '' ? undefined : e.target.value === 'true')}
-                  className={cn(
-                    "w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white border rounded-md",
+                <Select
+                  value={filters.has_sections === undefined ? 'all' : filters.has_sections ? 'true' : 'false'}
+                  onValueChange={(value) => updateFilter('has_sections', value === 'all' ? undefined : value === 'true')}
+                >
+                  <SelectTrigger className={cn(
+                    "w-full bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
                     neoBrutalismMode 
                       ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
                       : "border-[#e5e7e7] dark:border-[#333]"
-                  )}
-                >
-                  <option value="">{t('admin.all')}</option>
-                  <option value="true">{t('admin.yes')}</option>
-                  <option value="false">{t('admin.no')}</option>
-                </select>
+                  )}>
+                    <SelectValue placeholder={t('admin.all')} />
+                  </SelectTrigger>
+                  <SelectContent className={cn(
+                    "bg-white dark:bg-[#2a2a2a]",
+                    neoBrutalismMode 
+                      ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                      : ""
+                  )}>
+                    <SelectItem value="all">{t('admin.all')}</SelectItem>
+                    <SelectItem value="true">{t('admin.yes')}</SelectItem>
+                    <SelectItem value="false">{t('admin.no')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label className={cn(
@@ -215,20 +252,29 @@ export default function AdvancedSearchPanel({
                 )}>
                   {t('admin.hasStudents')}
                 </Label>
-                <select
-                  value={filters.has_students === undefined ? '' : filters.has_students ? 'true' : 'false'}
-                  onChange={(e) => updateFilter('has_students', e.target.value === '' ? undefined : e.target.value === 'true')}
-                  className={cn(
-                    "w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white border rounded-md",
+                <Select
+                  value={filters.has_students === undefined ? 'all' : filters.has_students ? 'true' : 'false'}
+                  onValueChange={(value) => updateFilter('has_students', value === 'all' ? undefined : value === 'true')}
+                >
+                  <SelectTrigger className={cn(
+                    "w-full bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
                     neoBrutalismMode 
                       ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
                       : "border-[#e5e7e7] dark:border-[#333]"
-                  )}
-                >
-                  <option value="">{t('admin.all')}</option>
-                  <option value="true">{t('admin.yes')}</option>
-                  <option value="false">{t('admin.no')}</option>
-                </select>
+                  )}>
+                    <SelectValue placeholder={t('admin.all')} />
+                  </SelectTrigger>
+                  <SelectContent className={cn(
+                    "bg-white dark:bg-[#2a2a2a]",
+                    neoBrutalismMode 
+                      ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                      : ""
+                  )}>
+                    <SelectItem value="all">{t('admin.all')}</SelectItem>
+                    <SelectItem value="true">{t('admin.yes')}</SelectItem>
+                    <SelectItem value="false">{t('admin.no')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
@@ -259,6 +305,20 @@ export default function AdvancedSearchPanel({
               >
                 <X className="h-4 w-4 mr-2" />
                 <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('admin.reset')}</span>
+              </Button>
+            )}
+            {onAddCourse && (
+              <Button
+                onClick={onAddCourse}
+                className={cn(
+                  "w-full md:w-auto",
+                  neoBrutalismMode 
+                    ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'primary', "bg-[#3bafa8] hover:bg-[#2a8d87] text-white")
+                    : "bg-[#3bafa8] hover:bg-[#2a8d87] text-white"
+                )}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('admin.addCourse')}</span>
               </Button>
             )}
           </div>
