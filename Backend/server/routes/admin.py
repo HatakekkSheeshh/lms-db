@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from config.database import get_db_connection
 import bcrypt
+import time
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -9,13 +10,18 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.route('/courses', methods=['GET'])
 def get_all_courses():
     """Get all courses with statistics - Using stored procedure GetAllCoursesWithStats"""
+    start_time = time.time()
     try:
+        print('[Backend] get_all_courses called')
         conn = get_db_connection()
         cursor = conn.cursor()
         # Use GetAllCoursesWithStats to get courses with section, student, and tutor counts
         cursor.execute('EXEC GetAllCoursesWithStats')
         courses = cursor.fetchall()
         conn.close()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] get_all_courses completed in {elapsed:.2f}s, returned {len(courses)} courses')
 
         result = []
         for course in courses:
@@ -120,6 +126,7 @@ def delete_course(course_id):
 @admin_bp.route('/courses/search', methods=['GET'])
 def search_courses():
     """Search courses with advanced filters - Using stored procedure"""
+    start_time = time.time()
     try:
         search_query = request.args.get('search', None)
         min_credit = request.args.get('min_credit', type=int)
@@ -128,6 +135,8 @@ def search_courses():
         start_date_to = request.args.get('start_date_to', None)
         has_sections = request.args.get('has_sections', type=lambda x: x.lower() == 'true' if x else None)
         has_students = request.args.get('has_students', type=lambda x: x.lower() == 'true' if x else None)
+        
+        print(f'[Backend] search_courses called with filters: search={search_query}, min_credit={min_credit}, max_credit={max_credit}')
         
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -144,6 +153,9 @@ def search_courses():
         
         courses = cursor.fetchall()
         conn.close()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] search_courses completed in {elapsed:.2f}s, returned {len(courses)} courses')
         
         result = []
         for course in courses:
@@ -195,13 +207,18 @@ def get_course_details(course_id):
 @admin_bp.route('/courses/<string:course_id>/sections', methods=['GET'])
 def get_course_sections(course_id):
     """Get all sections for a course - Using stored procedure"""
+    start_time = time.time()
     try:
+        print(f'[Backend] get_course_sections called for course_id={course_id}')
         conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute('EXEC GetCourseSections %s', (course_id,))
         sections = cursor.fetchall()
         conn.close()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] get_course_sections completed in {elapsed:.2f}s, returned {len(sections)} sections')
         
         result = []
         for section in sections:
@@ -213,11 +230,14 @@ def get_course_sections(course_id):
                 'TutorCount': section[4] if len(section) > 4 else 0,
                 'TutorNames': section[5] if len(section) > 5 else None,
                 'RoomCount': section[6] if len(section) > 6 else 0,
+                'RoomsInfo': section[7] if len(section) > 7 else None,  # New field for room details
             })
         
         return jsonify(result)
     except Exception as e:
-        print(f'Get course sections error: {e}')
+        print(f'[Backend] Get course sections error: {e}')
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': f'Failed to get course sections: {str(e)}'}), 500
 
 @admin_bp.route('/courses/<string:course_id>/students', methods=['GET'])
@@ -1271,14 +1291,19 @@ def get_all_submissions():
 @admin_bp.route('/statistics', methods=['GET'])
 def get_statistics():
     """Get system statistics for admin dashboard - Using stored procedure"""
+    start_time = time.time()
     conn = None
     try:
+        print('[Backend] get_statistics called')
         conn = get_db_connection()
         cursor = conn.cursor()
 
         # Call stored procedure
         cursor.execute('EXEC GetStatistics')
         result = cursor.fetchone()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] get_statistics completed in {elapsed:.2f}s')
         
         if not result:
             # If no result, return zeros
@@ -2488,4 +2513,268 @@ def get_top_tutors():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'Failed to get top tutors: {str(e)}'}), 500
+
+# ==================== COURSE STATISTICS & ANALYTICS ====================
+
+@admin_bp.route('/statistics/courses/enrollment-by-course', methods=['GET'])
+def get_course_enrollment_by_course():
+    """Get enrollment statistics by course - Using stored procedure"""
+    start_time = time.time()
+    try:
+        top_n = request.args.get('top_n', type=int)
+        print(f'[Backend] get_course_enrollment_by_course called with top_n={top_n}')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        if top_n:
+            cursor.execute('EXEC GetCourseEnrollmentByCourse %s', (top_n,))
+        else:
+            cursor.execute('EXEC GetCourseEnrollmentByCourse %s', (None,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] get_course_enrollment_by_course completed in {elapsed:.2f}s, returned {len(results)} results')
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Course_ID': row[0],
+                'Course_Name': row[1],
+                'Credit': int(row[2]) if row[2] is not None else None,
+                'SectionCount': int(row[3]) if row[3] else 0,
+                'StudentCount': int(row[4]) if row[4] else 0,
+                'TutorCount': int(row[5]) if row[5] else 0,
+                'AverageGrade': float(row[6]) if row[6] else None,
+                'ApprovedStudents': int(row[7]) if row[7] else 0,
+                'PendingStudents': int(row[8]) if row[8] else 0,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get course enrollment by course error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get course enrollment: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/courses/distribution-by-credit', methods=['GET'])
+def get_course_distribution_by_credit():
+    """Get course distribution by credit value - Using stored procedure"""
+    start_time = time.time()
+    try:
+        print('[Backend] get_course_distribution_by_credit called')
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetCourseDistributionByCredit')
+        results = cursor.fetchall()
+        conn.close()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] get_course_distribution_by_credit completed in {elapsed:.2f}s, returned {len(results)} results')
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Credit': int(row[0]) if row[0] is not None else 0,
+                'CourseCount': int(row[1]) if row[1] else 0,
+                'TotalStudents': int(row[2]) if row[2] else 0,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get course distribution by credit error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get course distribution: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/courses/top-by-enrollment', methods=['GET'])
+def get_top_courses_by_enrollment():
+    """Get top courses by enrollment - Using stored procedure"""
+    start_time = time.time()
+    try:
+        top_n = request.args.get('top_n', 10, type=int)
+        print(f'[Backend] get_top_courses_by_enrollment called with top_n={top_n}')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetTopCoursesByEnrollment %s', (top_n,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] get_top_courses_by_enrollment completed in {elapsed:.2f}s, returned {len(results)} results')
+        
+        courses = []
+        for row in results:
+            courses.append({
+                'Course_ID': row[0],
+                'Course_Name': row[1],
+                'Credit': int(row[2]) if row[2] is not None else None,
+                'StudentCount': int(row[3]) if row[3] else 0,
+                'SectionCount': int(row[4]) if row[4] else 0,
+                'TutorCount': int(row[5]) if row[5] else 0,
+                'AverageGrade': float(row[6]) if row[6] else None,
+                'MinGrade': float(row[7]) if row[7] else None,
+                'MaxGrade': float(row[8]) if row[8] else None,
+            })
+        
+        return jsonify(courses)
+    except Exception as e:
+        print(f'Get top courses by enrollment error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get top courses: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/courses/average-grade', methods=['GET'])
+def get_course_average_grade():
+    """Get average grade statistics by course - Using stored procedure"""
+    start_time = time.time()
+    try:
+        min_enrollment = request.args.get('min_enrollment', 1, type=int)
+        print(f'[Backend] get_course_average_grade called with min_enrollment={min_enrollment}')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetCourseAverageGradeByCourse %s', (min_enrollment,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] get_course_average_grade completed in {elapsed:.2f}s, returned {len(results)} results')
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Course_ID': row[0],
+                'Course_Name': row[1],
+                'Credit': int(row[2]) if row[2] is not None else None,
+                'StudentCount': int(row[3]) if row[3] else 0,
+                'AverageGPA': float(row[4]) if row[4] else None,
+                'AverageFinalGrade': float(row[5]) if row[5] else None,
+                'MinFinalGrade': float(row[6]) if row[6] else None,
+                'MaxFinalGrade': float(row[7]) if row[7] else None,
+                'StdDevFinalGrade': float(row[8]) if row[8] else None,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get course average grade error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get course average grade: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/courses/enrollment-trend', methods=['GET'])
+def get_course_enrollment_trend_over_time():
+    """Get course enrollment trend over time - Using stored procedure"""
+    start_time = time.time()
+    try:
+        group_by = request.args.get('group_by', 'Semester')  # 'Semester' or 'Month'
+        print(f'[Backend] get_course_enrollment_trend_over_time called with group_by={group_by}')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetCourseEnrollmentTrendOverTime %s', (group_by,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] get_course_enrollment_trend_over_time completed in {elapsed:.2f}s, returned {len(results)} results')
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Period': row[0],
+                'CourseCount': int(row[1]) if row[1] else 0,
+                'SectionCount': int(row[2]) if row[2] else 0,
+                'StudentCount': int(row[3]) if row[3] else 0,
+                'TutorCount': int(row[4]) if row[4] else 0,
+                'AverageGrade': float(row[5]) if row[5] else None,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get course enrollment trend error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get enrollment trend: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/courses/status-distribution', methods=['GET'])
+def get_course_status_distribution():
+    """Get course enrollment status distribution - Using stored procedure"""
+    start_time = time.time()
+    try:
+        print('[Backend] get_course_status_distribution called')
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC GetCourseStatusDistribution')
+        results = cursor.fetchall()
+        conn.close()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] get_course_status_distribution completed in {elapsed:.2f}s, returned {len(results)} results')
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Status': row[0],
+                'StudentCount': int(row[1]) if row[1] else 0,
+                'CourseCount': int(row[2]) if row[2] else 0,
+                'SectionCount': int(row[3]) if row[3] else 0,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get course status distribution error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get status distribution: {str(e)}'}), 500
+
+@admin_bp.route('/statistics/courses/activity', methods=['GET'])
+def get_course_activity_statistics():
+    """Get course activity statistics (assignments, quizzes, submissions) - Using stored procedure"""
+    start_time = time.time()
+    try:
+        top_n = request.args.get('top_n', type=int)
+        print(f'[Backend] get_course_activity_statistics called with top_n={top_n}')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        if top_n:
+            cursor.execute('EXEC GetCourseActivityStatistics %s', (top_n,))
+        else:
+            cursor.execute('EXEC GetCourseActivityStatistics %s', (None,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        elapsed = time.time() - start_time
+        print(f'[Backend] get_course_activity_statistics completed in {elapsed:.2f}s, returned {len(results)} results')
+        
+        stats = []
+        for row in results:
+            stats.append({
+                'Course_ID': row[0],
+                'Course_Name': row[1],
+                'Credit': int(row[2]) if row[2] is not None else None,
+                'SectionCount': int(row[3]) if row[3] else 0,
+                'StudentCount': int(row[4]) if row[4] else 0,
+                'TotalAssignments': int(row[5]) if row[5] else 0,
+                'TotalQuizzes': int(row[6]) if row[6] else 0,
+                'TotalSubmissions': int(row[7]) if row[7] else 0,
+                'SubmittedCount': int(row[8]) if row[8] else 0,
+                'AverageGrade': float(row[9]) if row[9] else None,
+            })
+        
+        return jsonify(stats)
+    except Exception as e:
+        print(f'Get course activity statistics error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to get course activity: {str(e)}'}), 500
 

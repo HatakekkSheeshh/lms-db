@@ -129,7 +129,13 @@ BEGIN
          WHERE t.Section_ID = s.Section_ID AND t.Course_ID = s.Course_ID AND t.Semester = s.Semester) as TutorNames,
         (SELECT COUNT(*) 
          FROM [takes_place] tp 
-         WHERE tp.Section_ID = s.Section_ID AND tp.Course_ID = s.Course_ID AND tp.Semester = s.Semester) as RoomCount
+         WHERE tp.Section_ID = s.Section_ID AND tp.Course_ID = s.Course_ID AND tp.Semester = s.Semester) as RoomCount,
+        -- Room and Building information as comma-separated strings
+        -- Format: "Building_Name - Room Room_ID" (e.g., "A1 - Room 101")
+        (SELECT STRING_AGG(CONCAT(b.Building_Name, ' - Room ', CAST(tp.Room_ID AS NVARCHAR(10))), ', ')
+         FROM [takes_place] tp
+         INNER JOIN [Building] b ON tp.Building_ID = b.Building_ID
+         WHERE tp.Section_ID = s.Section_ID AND tp.Course_ID = s.Course_ID AND tp.Semester = s.Semester) as RoomsInfo
     FROM [Section] s
     WHERE s.Course_ID = @Course_ID
     ORDER BY s.Semester, s.Section_ID;

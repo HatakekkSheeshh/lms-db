@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import DashboardLayout from '@/components/layout/DashboardLayout'
@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { adminService, type CourseDetails, type CourseSection, type CourseStudent, type CourseTutor, type CourseStatistics } from '@/lib/api/adminService'
-import { ArrowLeft, BookOpen, Users, GraduationCap, BarChart3, Loader2 } from 'lucide-react'
+import { ArrowLeft, BookOpen, Users, GraduationCap, BarChart3, Loader2, ArrowUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { 
   useNeoBrutalismMode, 
@@ -16,6 +17,14 @@ import {
   getNeoBrutalismTextClasses 
 } from '@/lib/utils/theme-utils'
 import CourseStatisticsView from '@/components/admin/CourseStatisticsView'
+import {
+  type ColumnDef,
+  type SortingState,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
 
 export default function CourseDetailPage() {
   const { t } = useTranslation()
@@ -28,6 +37,7 @@ export default function CourseDetailPage() {
   const [, setTutors] = useState<CourseTutor[]>([])
   const [statistics, setStatistics] = useState<CourseStatistics | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
+  const [sorting, setSorting] = useState<SortingState>([])
   const neoBrutalismMode = useNeoBrutalismMode()
 
   useEffect(() => {
@@ -35,6 +45,404 @@ export default function CourseDetailPage() {
       loadCourseData()
     }
   }, [courseId])
+
+  // Define columns for students table
+  const studentColumns: ColumnDef<CourseStudent>[] = useMemo(() => [
+    {
+      accessorKey: 'Last_Name',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className="h-8 px-2"
+          >
+            {t('admin.student')}
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => {
+        const student = row.original
+        return (
+          <div>
+            <p className={cn(
+              "font-semibold text-[#211c37] dark:text-white",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+            )}>
+              {student.Last_Name} {student.First_Name}
+            </p>
+            <p className={cn(
+              "text-xs text-[#85878d] dark:text-gray-400",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+            )}>
+              {student.University_ID} • {student.Major}
+            </p>
+          </div>
+        )
+      },
+      sortingFn: (rowA, rowB) => {
+        const nameA = `${rowA.original.Last_Name} ${rowA.original.First_Name}`
+        const nameB = `${rowB.original.Last_Name} ${rowB.original.First_Name}`
+        return nameA.localeCompare(nameB)
+      },
+    },
+    {
+      accessorKey: 'Section_ID',
+      header: ({ column }) => {
+        return (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="h-8 px-2"
+            >
+              {t('admin.section')}
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+      cell: ({ row }) => {
+        const student = row.original
+        return (
+          <div className="text-center">
+            <p className={cn(
+              "text-sm text-[#211c37] dark:text-white",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+            )}>
+              {student.Section_ID}
+            </p>
+            <p className={cn(
+              "text-xs text-[#85878d] dark:text-gray-400",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+            )}>
+              {student.Semester}
+            </p>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'Status',
+      header: ({ column }) => {
+        return (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="h-8 px-2"
+            >
+              {t('admin.status')}
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+      cell: ({ row }) => {
+        const student = row.original
+        return (
+          <div className="flex justify-center">
+            <Badge className={cn(
+              student.Status === 'Approved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+              student.Status === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+              'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+              neoBrutalismMode 
+                ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                : ""
+            )}>
+              {student.Status}
+            </Badge>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'Final_Grade',
+      header: ({ column }) => {
+        return (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="h-8 px-2"
+            >
+              {t('admin.finalGrade')}
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+      cell: ({ row }) => {
+        const grade = row.original.Final_Grade
+        return (
+          <div className="text-center">
+            <p className={cn(
+              "font-semibold text-[#211c37] dark:text-white",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+            )}>
+              {grade !== null ? grade.toFixed(2) : 'N/A'}
+            </p>
+          </div>
+        )
+      },
+      sortingFn: (rowA, rowB) => {
+        const gradeA = rowA.original.Final_Grade ?? -1
+        const gradeB = rowB.original.Final_Grade ?? -1
+        return gradeA - gradeB
+      },
+    },
+    {
+      accessorKey: 'Midterm_Grade',
+      header: ({ column }) => {
+        return (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="h-8 px-2"
+            >
+              {t('admin.midtermGrade')}
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+      cell: ({ row }) => {
+        const grade = row.original.Midterm_Grade
+        return (
+          <div className="text-center">
+            <p className={cn(
+              "text-sm text-[#211c37] dark:text-white",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+            )}>
+              {grade !== null ? grade.toFixed(2) : 'N/A'}
+            </p>
+          </div>
+        )
+      },
+      sortingFn: (rowA, rowB) => {
+        const gradeA = rowA.original.Midterm_Grade ?? -1
+        const gradeB = rowB.original.Midterm_Grade ?? -1
+        return gradeA - gradeB
+      },
+    },
+    {
+      accessorKey: 'Quiz_Grade',
+      header: ({ column }) => {
+        return (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="h-8 px-2"
+            >
+              {t('admin.quizGrade')}
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+      cell: ({ row }) => {
+        const grade = row.original.Quiz_Grade
+        return (
+          <div className="text-center">
+            <p className={cn(
+              "text-sm text-[#211c37] dark:text-white",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+            )}>
+              {grade !== null ? grade.toFixed(2) : 'N/A'}
+            </p>
+          </div>
+        )
+      },
+      sortingFn: (rowA, rowB) => {
+        const gradeA = rowA.original.Quiz_Grade ?? -1
+        const gradeB = rowB.original.Quiz_Grade ?? -1
+        return gradeA - gradeB
+      },
+    },
+    {
+      accessorKey: 'Assignment_Grade',
+      header: ({ column }) => {
+        return (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="h-8 px-2"
+            >
+              {t('admin.assignmentGrade')}
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+      cell: ({ row }) => {
+        const grade = row.original.Assignment_Grade
+        return (
+          <div className="text-center">
+            <p className={cn(
+              "text-sm text-[#211c37] dark:text-white",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+            )}>
+              {grade !== null ? grade.toFixed(2) : 'N/A'}
+            </p>
+          </div>
+        )
+      },
+      sortingFn: (rowA, rowB) => {
+        const gradeA = rowA.original.Assignment_Grade ?? -1
+        const gradeB = rowB.original.Assignment_Grade ?? -1
+        return gradeA - gradeB
+      },
+    },
+    {
+      id: 'GPA',
+      accessorFn: (row) => {
+        // Calculate GPA: Quiz 10%, Midterm 20%, Assignment 20%, Final 50%
+        const quiz = row.Quiz_Grade ?? 0
+        const midterm = row.Midterm_Grade ?? 0
+        const assignment = row.Assignment_Grade ?? 0
+        const final = row.Final_Grade ?? 0
+        
+        // Calculate total weight based on available grades
+        let totalWeight = 0
+        let weightedSum = 0
+        
+        if (row.Final_Grade !== null) {
+          weightedSum += final * 0.5
+          totalWeight += 0.5
+        }
+        if (row.Midterm_Grade !== null) {
+          weightedSum += midterm * 0.2
+          totalWeight += 0.2
+        }
+        if (row.Assignment_Grade !== null) {
+          weightedSum += assignment * 0.2
+          totalWeight += 0.2
+        }
+        if (row.Quiz_Grade !== null) {
+          weightedSum += quiz * 0.1
+          totalWeight += 0.1
+        }
+        
+        // Return GPA if we have at least Final grade, otherwise null
+        if (totalWeight > 0 && row.Final_Grade !== null) {
+          return weightedSum / totalWeight
+        }
+        return null
+      },
+      header: ({ column }) => {
+        return (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              className="h-8 px-2"
+            >
+              {t('admin.gpa') || 'GPA'}
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+      cell: ({ row }) => {
+        const student = row.original
+        // Calculate GPA: Quiz 10%, Midterm 20%, Assignment 20%, Final 50%
+        const quiz = student.Quiz_Grade ?? 0
+        const midterm = student.Midterm_Grade ?? 0
+        const assignment = student.Assignment_Grade ?? 0
+        const final = student.Final_Grade ?? 0
+        
+        // Calculate total weight based on available grades
+        let totalWeight = 0
+        let weightedSum = 0
+        
+        if (student.Final_Grade !== null) {
+          weightedSum += final * 0.5
+          totalWeight += 0.5
+        }
+        if (student.Midterm_Grade !== null) {
+          weightedSum += midterm * 0.2
+          totalWeight += 0.2
+        }
+        if (student.Assignment_Grade !== null) {
+          weightedSum += assignment * 0.2
+          totalWeight += 0.2
+        }
+        if (student.Quiz_Grade !== null) {
+          weightedSum += quiz * 0.1
+          totalWeight += 0.1
+        }
+        
+        // Calculate GPA if we have at least Final grade
+        const gpa = totalWeight > 0 && student.Final_Grade !== null 
+          ? weightedSum / totalWeight 
+          : null
+        
+        return (
+          <div className="text-center">
+            <p className={cn(
+              "font-semibold text-[#211c37] dark:text-white",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+            )}>
+              {gpa !== null ? gpa.toFixed(2) : 'N/A'}
+            </p>
+          </div>
+        )
+      },
+      sortingFn: (rowA, rowB) => {
+        // Calculate GPA for both rows
+        const calculateGPA = (student: CourseStudent) => {
+          const quiz = student.Quiz_Grade ?? 0
+          const midterm = student.Midterm_Grade ?? 0
+          const assignment = student.Assignment_Grade ?? 0
+          const final = student.Final_Grade ?? 0
+          
+          let totalWeight = 0
+          let weightedSum = 0
+          
+          if (student.Final_Grade !== null) {
+            weightedSum += final * 0.5
+            totalWeight += 0.5
+          }
+          if (student.Midterm_Grade !== null) {
+            weightedSum += midterm * 0.2
+            totalWeight += 0.2
+          }
+          if (student.Assignment_Grade !== null) {
+            weightedSum += assignment * 0.2
+            totalWeight += 0.2
+          }
+          if (student.Quiz_Grade !== null) {
+            weightedSum += quiz * 0.1
+            totalWeight += 0.1
+          }
+          
+          return totalWeight > 0 && student.Final_Grade !== null 
+            ? weightedSum / totalWeight 
+            : -1
+        }
+        
+        const gpaA = calculateGPA(rowA.original)
+        const gpaB = calculateGPA(rowB.original)
+        return gpaA - gpaB
+      },
+    },
+  ], [t, neoBrutalismMode])
+
+  const studentTable = useReactTable({
+    data: students,
+    columns: studentColumns,
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getRowId: (row) => `${row.University_ID}-${row.Section_ID}-${row.Semester}-${row.Assessment_ID}`,
+    state: {
+      sorting,
+    },
+  })
 
   const loadCourseData = async () => {
     if (!courseId) return
@@ -460,37 +868,46 @@ export default function CourseDetailPage() {
                                 {section.TutorCount}
                               </p>
                             </div>
-                            <div>
+                            <div className="md:col-span-2">
                               <p className={cn(
                                 "text-[#85878d] dark:text-gray-400",
                                 getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
                               )}>
-                                {t('admin.rooms')}
+                                {t('admin.rooms')} ({section.RoomCount})
+                              </p>
+                              {section.RoomsInfo ? (
+                                <p className={cn(
+                                  "text-sm text-[#211c37] dark:text-white mt-1",
+                                  getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                )}>
+                                  {section.RoomsInfo}
+                                </p>
+                              ) : (
+                                <p className={cn(
+                                  "text-sm text-[#85878d] dark:text-gray-400 mt-1 italic",
+                                  getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                )}>
+                                  {t('admin.noRoomsAssigned') || 'No rooms assigned'}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {section.TutorNames && (
+                            <div className="mt-3 pt-3 border-t border-[#e5e7e7] dark:border-[#333]">
+                              <p className={cn(
+                                "text-sm text-[#85878d] dark:text-gray-400 mb-1",
+                                getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                              )}>
+                                {t('admin.tutorNames')}
                               </p>
                               <p className={cn(
-                                "font-semibold text-[#211c37] dark:text-white",
-                                getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                "text-sm text-[#211c37] dark:text-white",
+                                getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
                               )}>
-                                {section.RoomCount}
+                                {section.TutorNames}
                               </p>
                             </div>
-                            {section.TutorNames && (
-                              <div>
-                                <p className={cn(
-                                  "text-[#85878d] dark:text-gray-400",
-                                  getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                                )}>
-                                  {t('admin.tutorNames')}
-                                </p>
-                                <p className={cn(
-                                  "text-xs text-[#211c37] dark:text-white",
-                                  getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                                )}>
-                                  {section.TutorNames}
-                                </p>
-                              </div>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -519,109 +936,87 @@ export default function CourseDetailPage() {
                     "text-xl text-[#1f1d39] dark:text-white",
                     getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
                   )}>
-                    {t('admin.enrolledStudents')}
+                    {t('admin.enrolledStudents')} ({students.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className={cn(
-                          "border-b",
-                          neoBrutalismMode 
-                            ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB]"
-                            : "border-[#e5e7e7] dark:border-[#333]"
-                        )}>
-                          <th className={cn(
-                            "text-left py-3 px-4 text-sm font-semibold text-[#211c37] dark:text-white",
-                            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                          )}>
-                            {t('admin.student')}
-                          </th>
-                          <th className={cn(
-                            "text-left py-3 px-4 text-sm font-semibold text-[#211c37] dark:text-white",
-                            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                          )}>
-                            {t('admin.section')}
-                          </th>
-                          <th className={cn(
-                            "text-left py-3 px-4 text-sm font-semibold text-[#211c37] dark:text-white",
-                            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                          )}>
-                            {t('admin.status')}
-                          </th>
-                          <th className={cn(
-                            "text-left py-3 px-4 text-sm font-semibold text-[#211c37] dark:text-white",
-                            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                          )}>
-                            {t('admin.finalGrade')}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {students.map((student) => (
-                          <tr key={`${student.University_ID}-${student.Section_ID}-${student.Semester}`} className={cn(
-                            "border-b",
-                            neoBrutalismMode 
-                              ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB]"
-                              : "border-[#e5e7e7] dark:border-[#333]"
-                          )}>
-                            <td className="py-3 px-4">
-                              <div>
-                                <p className={cn(
-                                  "font-semibold text-[#211c37] dark:text-white",
-                                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                                )}>
-                                  {student.First_Name} {student.Last_Name}
-                                </p>
-                                <p className={cn(
-                                  "text-xs text-[#85878d] dark:text-gray-400",
-                                  getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                                )}>
-                                  {student.University_ID} • {student.Major}
-                                </p>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div>
-                                <p className={cn(
-                                  "text-sm text-[#211c37] dark:text-white",
-                                  getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                                )}>
-                                  {student.Section_ID}
-                                </p>
-                                <p className={cn(
-                                  "text-xs text-[#85878d] dark:text-gray-400",
-                                  getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                                )}>
-                                  {student.Semester}
-                                </p>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <Badge className={cn(
-                                student.Status === 'Approved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                                student.Status === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-                                neoBrutalismMode 
-                                  ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
-                                  : ""
-                              )}>
-                                {student.Status}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-4">
-                              <p className={cn(
-                                "font-semibold text-[#211c37] dark:text-white",
-                                getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                              )}>
-                                {student.Final_Grade !== null ? student.Final_Grade.toFixed(2) : 'N/A'}
-                              </p>
-                            </td>
-                          </tr>
+                    <Table>
+                      <TableHeader>
+                        {studentTable.getHeaderGroups().map((headerGroup) => (
+                          <TableRow 
+                            key={headerGroup.id}
+                            className={cn(
+                              neoBrutalismMode 
+                                ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB]"
+                                : "border-[#e5e7e7] dark:border-[#333]"
+                            )}
+                          >
+                            {headerGroup.headers.map((header) => {
+                              const isCenterColumn = ['Section_ID', 'Status', 'Final_Grade', 'Midterm_Grade', 'Quiz_Grade', 'Assignment_Grade', 'GPA'].includes(header.column.id)
+                              return (
+                                <TableHead 
+                                  key={header.id}
+                                  className={cn(
+                                    "py-3 px-4",
+                                    isCenterColumn ? 'text-center' : 'text-left',
+                                    getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                  )}
+                                >
+                                  {header.isPlaceholder
+                                    ? null
+                                    : flexRender(
+                                        header.column.columnDef.header,
+                                        header.getContext()
+                                      )}
+                                </TableHead>
+                              )
+                            })}
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableHeader>
+                      <TableBody>
+                        {studentTable.getRowModel().rows?.length ? (
+                          studentTable.getRowModel().rows.map((row) => (
+                            <TableRow
+                              key={row.id}
+                              data-state={row.getIsSelected() && "selected"}
+                              className={cn(
+                                neoBrutalismMode 
+                                  ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB]"
+                                  : "border-[#e5e7e7] dark:border-[#333]"
+                              )}
+                            >
+                              {row.getVisibleCells().map((cell) => {
+                                const isCenterColumn = ['Section_ID', 'Status', 'Final_Grade', 'Midterm_Grade', 'Quiz_Grade', 'Assignment_Grade', 'GPA'].includes(cell.column.id)
+                                return (
+                                  <TableCell 
+                                    key={cell.id}
+                                    className={cn(
+                                      "py-3 px-4",
+                                      isCenterColumn && 'text-center'
+                                    )}
+                                  >
+                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                  </TableCell>
+                                )
+                              })}
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={studentColumns.length} className="h-24 text-center">
+                              <p className={cn(
+                                "text-[#85878d] dark:text-gray-400",
+                                getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                              )}>
+                                {t('admin.noStudents')}
+                              </p>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
                   </div>
                 </CardContent>
               </Card>

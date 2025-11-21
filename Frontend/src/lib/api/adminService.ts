@@ -46,6 +46,7 @@ export interface CourseSection {
   TutorCount: number
   TutorNames: string | null
   RoomCount: number
+  RoomsInfo: string | null  // Building name and room number details
 }
 
 export interface CourseStudent {
@@ -348,6 +349,78 @@ export interface TopTutor {
   AverageStudentGPA: number | null
 }
 
+// Course Statistics
+export interface CourseEnrollmentByCourse {
+  Course_ID: string
+  Course_Name: string
+  Credit: number | null
+  SectionCount: number
+  StudentCount: number
+  TutorCount: number
+  AverageGrade: number | null
+  ApprovedStudents: number
+  PendingStudents: number
+}
+
+export interface CourseDistributionByCredit {
+  Credit: number
+  CourseCount: number
+  TotalStudents: number
+}
+
+export interface TopCourseByEnrollment {
+  Course_ID: string
+  Course_Name: string
+  Credit: number | null
+  StudentCount: number
+  SectionCount: number
+  TutorCount: number
+  AverageGrade: number | null
+  MinGrade: number | null
+  MaxGrade: number | null
+}
+
+export interface CourseAverageGrade {
+  Course_ID: string
+  Course_Name: string
+  Credit: number | null
+  StudentCount: number
+  AverageGPA: number | null
+  AverageFinalGrade: number | null
+  MinFinalGrade: number | null
+  MaxFinalGrade: number | null
+  StdDevFinalGrade: number | null
+}
+
+export interface CourseEnrollmentTrendOverTime {
+  Period: string
+  CourseCount: number
+  SectionCount: number
+  StudentCount: number
+  TutorCount: number
+  AverageGrade: number | null
+}
+
+export interface CourseStatusDistribution {
+  Status: string
+  StudentCount: number
+  CourseCount: number
+  SectionCount: number
+}
+
+export interface CourseActivityStatistics {
+  Course_ID: string
+  Course_Name: string
+  Credit: number | null
+  SectionCount: number
+  StudentCount: number
+  TotalAssignments: number
+  TotalQuizzes: number
+  TotalSubmissions: number
+  SubmittedCount: number
+  AverageGrade: number | null
+}
+
 export const adminService = {
   // Statistics
   async getStatistics(): Promise<Statistics> {
@@ -360,7 +433,9 @@ export const adminService = {
 
   // Courses
   async getCourses(): Promise<AdminCourse[]> {
-    const response = await apiClient.get('/admin/courses')
+    const response = await apiClient.get('/admin/courses', {
+      timeout: 10000, // 10 seconds for courses with statistics
+    })
     return response.data
   },
 
@@ -395,7 +470,9 @@ export const adminService = {
     if (params.has_sections !== undefined) queryParams.append('has_sections', params.has_sections.toString())
     if (params.has_students !== undefined) queryParams.append('has_students', params.has_students.toString())
     
-    const response = await apiClient.get(`/admin/courses/search?${queryParams.toString()}`)
+    const response = await apiClient.get(`/admin/courses/search?${queryParams.toString()}`, {
+      timeout: 10000, // 10 seconds for search queries
+    })
     return response.data
   },
 
@@ -819,6 +896,61 @@ export const adminService = {
   async getTopTutors(topN: number = 10): Promise<TopTutor[]> {
     const response = await apiClient.get('/admin/statistics/top-tutors', {
       params: { top_n: topN }
+    })
+    return response.data
+  },
+
+  // Course Statistics & Analytics
+  async getCourseEnrollmentByCourse(topN?: number): Promise<CourseEnrollmentByCourse[]> {
+    const response = await apiClient.get('/admin/statistics/courses/enrollment-by-course', {
+      params: topN ? { top_n: topN } : {},
+      timeout: 15000, // 15 seconds for complex statistics queries
+    })
+    return response.data
+  },
+
+  async getCourseDistributionByCredit(): Promise<CourseDistributionByCredit[]> {
+    const response = await apiClient.get('/admin/statistics/courses/distribution-by-credit', {
+      timeout: 15000, // 15 seconds for complex statistics queries
+    })
+    return response.data
+  },
+
+  async getTopCoursesByEnrollment(topN: number = 10): Promise<TopCourseByEnrollment[]> {
+    const response = await apiClient.get('/admin/statistics/courses/top-by-enrollment', {
+      params: { top_n: topN },
+      timeout: 15000, // 15 seconds for complex statistics queries
+    })
+    return response.data
+  },
+
+  async getCourseAverageGrade(minEnrollment: number = 1): Promise<CourseAverageGrade[]> {
+    const response = await apiClient.get('/admin/statistics/courses/average-grade', {
+      params: { min_enrollment: minEnrollment },
+      timeout: 15000, // 15 seconds for complex statistics queries
+    })
+    return response.data
+  },
+
+  async getCourseEnrollmentTrendOverTime(groupBy: 'Semester' | 'Month' = 'Semester'): Promise<CourseEnrollmentTrendOverTime[]> {
+    const response = await apiClient.get('/admin/statistics/courses/enrollment-trend', {
+      params: { group_by: groupBy },
+      timeout: 15000, // 15 seconds for complex statistics queries
+    })
+    return response.data
+  },
+
+  async getCourseStatusDistribution(): Promise<CourseStatusDistribution[]> {
+    const response = await apiClient.get('/admin/statistics/courses/status-distribution', {
+      timeout: 15000, // 15 seconds for complex statistics queries
+    })
+    return response.data
+  },
+
+  async getCourseActivityStatistics(topN?: number): Promise<CourseActivityStatistics[]> {
+    const response = await apiClient.get('/admin/statistics/courses/activity', {
+      params: topN ? { top_n: topN } : {},
+      timeout: 15000, // 15 seconds for complex statistics queries
     })
     return response.data
   },
