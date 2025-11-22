@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -123,6 +123,11 @@ export default function UserManagementPage() {
   const [performanceGroupBy, setPerformanceGroupBy] = useState<'Semester' | 'Month'>('Semester')
   const neoBrutalismMode = useNeoBrutalismMode()
 
+  // Refs to prevent race conditions
+  const isMountedRef = useRef(true)
+  const isLoadingUsersRef = useRef(false)
+  const initialLoadDoneRef = useRef(false)
+
   // Table state
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -151,8 +156,14 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     // Initial load - always load all users for statistics
+    isMountedRef.current = true
+    initialLoadDoneRef.current = false
     loadUsers(true)
     loadFilterOptions()
+    
+    return () => {
+      isMountedRef.current = false
+    }
   }, [])
 
   const loadFilterOptions = async () => {
@@ -165,10 +176,24 @@ export default function UserManagementPage() {
   }
 
   const loadUsers = async (isInitialLoad: boolean = false) => {
+    // Prevent concurrent calls
+    if (isLoadingUsersRef.current) {
+      console.log('loadUsers already in progress, skipping...')
+      return
+    }
+    
+    // Check if component is still mounted
+    if (!isMountedRef.current) {
+      return
+    }
+    
     try {
+      isLoadingUsersRef.current = true
+      
       // Only show full loading on initial load, use filtering state for subsequent filters
       if (isInitialLoad) {
         setLoading(true)
+        initialLoadDoneRef.current = false
       } else {
         setFiltering(true)
       }
@@ -185,6 +210,9 @@ export default function UserManagementPage() {
           type: typeFilter && typeFilter !== 'all' ? typeFilter : undefined,
           search: submittedSearchQuery.trim() || undefined,
         })
+        
+        // Check if still mounted before updating state
+        if (!isMountedRef.current) return
         
         const filteredUsersList: User[] = filteredUsers.map((u: any) => ({
           University_ID: u.University_ID,
@@ -206,6 +234,9 @@ export default function UserManagementPage() {
           adminService.getTutors(),
           adminService.getAdmins(),
         ])
+        
+        // Check if still mounted before processing results
+        if (!isMountedRef.current) return
         
         // Extract results, use empty array if failed
         const students = studentsResult.status === 'fulfilled' && Array.isArray(studentsResult.value) 
@@ -229,6 +260,12 @@ export default function UserManagementPage() {
           console.error('Error loading admins:', adminsResult.reason)
         }
         
+        // Check if any API calls failed
+        const hasFailedAPIs = studentsResult.status === 'rejected' || 
+                              tutorsResult.status === 'rejected' || 
+                              adminsResult.status === 'rejected'
+        
+        // Build the user list
         const allUsersList: User[] = [
           ...students.map(s => ({
             University_ID: s.University_ID,
@@ -262,34 +299,70 @@ export default function UserManagementPage() {
           })),
         ]
         
-        // ALWAYS update allUsers when loading all users (for statistics)
-        // This ensures statistics always reflect the full user list
-        setAllUsers(allUsersList)
+        // Only update allUsers if:
+        // 1. This is initial load (always update on first load, even if some APIs fail)
+        // 2. All API calls succeeded and we have data (subsequent loads)
+        // This prevents clearing existing data when API calls fail on subsequent loads
+        const shouldUpdateAllUsers = isInitialLoad || (!hasFailedAPIs && allUsersList.length > 0)
         
-        // Apply role filter if needed
-        if (roleFilter !== 'all') {
-          const filtered = allUsersList.filter(u => u.role === roleFilter)
-          setUsers(filtered)
-        } else {
-          setUsers(allUsersList)
+        if (shouldUpdateAllUsers) {
+          setAllUsers(allUsersList)
+          if (isInitialLoad) {
+            initialLoadDoneRef.current = true
+          }
+          
+          // Apply role filter if needed
+          if (roleFilter !== 'all') {
+            const filtered = allUsersList.filter(u => u.role === roleFilter)
+            setUsers(filtered)
+          } else {
+            setUsers(allUsersList)
+          }
+        } else if (hasFailedAPIs && !isInitialLoad) {
+          // If API calls failed on subsequent loads, don't update allUsers
+          // This preserves the statistics from previous successful load
+          console.warn('Some API calls failed, keeping existing allUsers data for statistics')
+          
+          // Don't update users either to avoid showing incomplete data
+          // The existing users state will remain unchanged
+        } else if (allUsersList.length > 0) {
+          // If we have data but shouldn't update allUsers, still update users for display
+          if (roleFilter !== 'all') {
+            const filtered = allUsersList.filter(u => u.role === roleFilter)
+            setUsers(filtered)
+          } else {
+            setUsers(allUsersList)
+          }
         }
       }
     } catch (error) {
       console.error('Error loading users:', error)
       // On error, don't clear existing data
     } finally {
-      if (isInitialLoad) {
-        setLoading(false)
-      } else {
-        setFiltering(false)
+      isLoadingUsersRef.current = false
+      if (isMountedRef.current) {
+        if (isInitialLoad) {
+          setLoading(false)
+        } else {
+          setFiltering(false)
+        }
       }
     }
   }
 
   // Reload users when filters change (using submitted search query)
+  // Only trigger after initial load is done to prevent race condition
   useEffect(() => {
+    // Skip if initial load hasn't completed yet
+    if (!initialLoadDoneRef.current) {
+      return
+    }
+    
     const timeoutId = setTimeout(() => {
-      loadUsers()
+      // Only load if component is still mounted
+      if (isMountedRef.current) {
+        loadUsers(false)
+      }
     }, 300) // Debounce to avoid too many API calls
     
     return () => clearTimeout(timeoutId)

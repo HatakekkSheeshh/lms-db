@@ -18,6 +18,7 @@ def deploy_procedures():
         'get_statistics.sql',
         'course_crud.sql',
         'course_advanced.sql',
+        'course_statistics.sql',
         'section_crud.sql',
         'student_crud.sql',
         'tutor_crud.sql',
