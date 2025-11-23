@@ -46,7 +46,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { adminService, type AdminCourse, type CourseEnrollmentByCourse, type CourseDistributionByCredit, type TopCourseByEnrollment, type CourseAverageGrade, type CourseEnrollmentTrendOverTime, type CourseStatusDistribution, type CourseActivityStatistics, type Room, type Building, type RoomEquipment } from '@/lib/api/adminService'
+import { adminService, type AdminCourse, type CourseEnrollmentByCourse, type CourseDistributionByCredit, type TopCourseByEnrollment, type CourseAverageGrade, type CourseEnrollmentTrendOverTime, type CourseStatusDistribution, type CourseActivityStatistics, type Room, type Building, type RoomEquipment, type RoomSection } from '@/lib/api/adminService'
 import { BookOpen, Edit2, Trash2, Eye, ArrowUpDown, MoreHorizontal, ChevronDown, Loader2, BarChart3, Plus, MapPin, Grid, List, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Wrench } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { 
@@ -136,6 +136,8 @@ export default function CourseManagementPage() {
   const [selectedFloors, setSelectedFloors] = useState<{ [buildingName: string]: string | null }>({})
   const [roomEquipment, setRoomEquipment] = useState<{ [key: string]: RoomEquipment[] }>({})
   const [loadingEquipment, setLoadingEquipment] = useState<{ [key: string]: boolean }>({})
+  const [roomSections, setRoomSections] = useState<{ [key: string]: RoomSection[] }>({})
+  const [loadingSections, setLoadingSections] = useState<{ [key: string]: boolean }>({})
 
   useEffect(() => {
     loadCourses()
@@ -262,6 +264,25 @@ export default function CourseManagementPage() {
       setRoomEquipment(prev => ({ ...prev, [key]: [] }))
     } finally {
       setLoadingEquipment(prev => ({ ...prev, [key]: false }))
+    }
+  }
+
+  const loadRoomSections = async (buildingName: string, roomName: string) => {
+    const key = `${buildingName}-${roomName}`
+    if (roomSections[key]) {
+      // Already loaded
+      return
+    }
+    
+    setLoadingSections(prev => ({ ...prev, [key]: true }))
+    try {
+      const sections = await adminService.getRoomSections(buildingName, roomName)
+      setRoomSections(prev => ({ ...prev, [key]: sections }))
+    } catch (error) {
+      console.error('Failed to load room sections:', error)
+      setRoomSections(prev => ({ ...prev, [key]: [] }))
+    } finally {
+      setLoadingSections(prev => ({ ...prev, [key]: false }))
     }
   }
 
@@ -2183,9 +2204,92 @@ export default function CourseManagementPage() {
                                                   {room.Capacity || '-'}
                                                 </TableCell>
                                                 <TableCell className="text-center">
-                                                  <Badge variant={room.UsageCount && room.UsageCount > 0 ? 'default' : 'secondary'}>
-                                                    {room.UsageCount || 0}
-                                                  </Badge>
+                                                  {room.UsageCount && room.UsageCount > 0 ? (
+                                                    <Popover>
+                                                      <PopoverTrigger asChild>
+                                                        <Button
+                                                          variant="ghost"
+                                                          size="sm"
+                                                          className="h-auto p-1"
+                                                          onClick={() => {
+                                                            const key = `${room.Building_Name}-${room.Room_Name}`
+                                                            if (!roomSections[key]) {
+                                                              loadRoomSections(room.Building_Name, room.Room_Name)
+                                                            }
+                                                          }}
+                                                        >
+                                                          <Badge 
+                                                            variant="default" 
+                                                            className="cursor-pointer hover:bg-primary/80 transition-colors flex items-center gap-1"
+                                                          >
+                                                            <BookOpen className="h-3 w-3" />
+                                                            {room.UsageCount}
+                                                          </Badge>
+                                                        </Button>
+                                                      </PopoverTrigger>
+                                                      <PopoverContent 
+                                                        className={cn(
+                                                          "w-80 p-0",
+                                                          neoBrutalismMode 
+                                                            ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                            : ""
+                                                        )}
+                                                        align="center"
+                                                      >
+                                                        <div className="p-3">
+                                                          <div className="flex items-center justify-between mb-2">
+                                                            <h4 className={cn(
+                                                              "font-semibold text-sm",
+                                                              getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                                            )}>
+                                                              {t('admin.sections')} - {room.Building_Name} {room.Room_Name}
+                                                            </h4>
+                                                          </div>
+                                                          <ScrollArea className="h-[200px] pr-4">
+                                                            {loadingSections[`${room.Building_Name}-${room.Room_Name}`] ? (
+                                                              <div className="flex items-center justify-center py-8">
+                                                                <Loader2 className="h-5 w-5 animate-spin text-[#3bafa8]" />
+                                                              </div>
+                                                            ) : (
+                                                              <div className="space-y-2">
+                                                                {roomSections[`${room.Building_Name}-${room.Room_Name}`]?.length > 0 ? (
+                                                                  roomSections[`${room.Building_Name}-${room.Room_Name}`].map((section, idx) => (
+                                                                    <div 
+                                                                      key={idx}
+                                                                      className={cn(
+                                                                        "p-2 rounded-md border",
+                                                                        neoBrutalismMode 
+                                                                          ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                                          : "border-gray-200 dark:border-gray-700"
+                                                                      )}
+                                                                    >
+                                                                      <div className="text-sm font-medium">
+                                                                        {section.Course_ID} - {section.Section_ID}
+                                                                      </div>
+                                                                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                                                                        {section.Course_Name}
+                                                                      </div>
+                                                                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                                                        {t('admin.semester')}: {section.Semester}
+                                                                      </div>
+                                                                    </div>
+                                                                  ))
+                                                                ) : (
+                                                                  <span className="text-sm text-gray-500 dark:text-gray-400 py-4">
+                                                                    {t('admin.noSections')}
+                                                                  </span>
+                                                                )}
+                                                              </div>
+                                                            )}
+                                                          </ScrollArea>
+                                                        </div>
+                                                      </PopoverContent>
+                                                    </Popover>
+                                                  ) : (
+                                                    <Badge variant="secondary">
+                                                      0
+                                                    </Badge>
+                                                  )}
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                   {room.EquipmentCount && room.EquipmentCount > 0 ? (
@@ -2399,9 +2503,92 @@ export default function CourseManagementPage() {
                                         {room.Capacity || '-'}
                                       </TableCell>
                                       <TableCell className="text-center">
-                                        <Badge variant={room.UsageCount && room.UsageCount > 0 ? 'default' : 'secondary'}>
-                                          {room.UsageCount || 0} {t('admin.sections')}
-                                        </Badge>
+                                        {room.UsageCount && room.UsageCount > 0 ? (
+                                          <Popover>
+                                            <PopoverTrigger asChild>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-auto p-1"
+                                                onClick={() => {
+                                                  const key = `${room.Building_Name}-${room.Room_Name}`
+                                                  if (!roomSections[key]) {
+                                                    loadRoomSections(room.Building_Name, room.Room_Name)
+                                                  }
+                                                }}
+                                              >
+                                                <Badge 
+                                                  variant="default" 
+                                                  className="cursor-pointer hover:bg-primary/80 transition-colors flex items-center gap-1"
+                                                >
+                                                  <BookOpen className="h-3 w-3" />
+                                                  {room.UsageCount} {t('admin.sections')}
+                                                </Badge>
+                                              </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent 
+                                              className={cn(
+                                                "w-80 p-0",
+                                                neoBrutalismMode 
+                                                  ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                  : ""
+                                              )}
+                                              align="center"
+                                            >
+                                              <div className="p-3">
+                                                <div className="flex items-center justify-between mb-2">
+                                                  <h4 className={cn(
+                                                    "font-semibold text-sm",
+                                                    getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                                  )}>
+                                                    {t('admin.sections')} - {room.Building_Name} {room.Room_Name}
+                                                  </h4>
+                                                </div>
+                                                <ScrollArea className="h-[200px] pr-4">
+                                                  {loadingSections[`${room.Building_Name}-${room.Room_Name}`] ? (
+                                                    <div className="flex items-center justify-center py-8">
+                                                      <Loader2 className="h-5 w-5 animate-spin text-[#3bafa8]" />
+                                                    </div>
+                                                  ) : (
+                                                    <div className="space-y-2">
+                                                      {roomSections[`${room.Building_Name}-${room.Room_Name}`]?.length > 0 ? (
+                                                        roomSections[`${room.Building_Name}-${room.Room_Name}`].map((section, idx) => (
+                                                          <div 
+                                                            key={idx}
+                                                            className={cn(
+                                                              "p-2 rounded-md border",
+                                                              neoBrutalismMode 
+                                                                ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                                : "border-gray-200 dark:border-gray-700"
+                                                            )}
+                                                          >
+                                                            <div className="text-sm font-medium">
+                                                              {section.Course_ID} - {section.Section_ID}
+                                                            </div>
+                                                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                                                              {section.Course_Name}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                                              {t('admin.semester')}: {section.Semester}
+                                                            </div>
+                                                          </div>
+                                                        ))
+                                                      ) : (
+                                                        <span className="text-sm text-gray-500 dark:text-gray-400 py-4">
+                                                          {t('admin.noSections')}
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  )}
+                                                </ScrollArea>
+                                              </div>
+                                            </PopoverContent>
+                                          </Popover>
+                                        ) : (
+                                          <Badge variant="secondary">
+                                            0 {t('admin.sections')}
+                                          </Badge>
+                                        )}
                                       </TableCell>
                                       <TableCell className="text-center">
                                         {room.EquipmentCount && room.EquipmentCount > 0 ? (
@@ -2563,9 +2750,92 @@ export default function CourseManagementPage() {
                                       <span className="text-gray-600 dark:text-gray-400">
                                         {t('admin.capacity')}: <strong>{room.Capacity || '-'}</strong>
                                       </span>
-                                      <Badge variant={room.UsageCount && room.UsageCount > 0 ? 'default' : 'secondary'}>
-                                        {room.UsageCount || 0} {t('admin.sections')}
-                                      </Badge>
+                                      {room.UsageCount && room.UsageCount > 0 ? (
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-auto p-1"
+                                              onClick={() => {
+                                                const key = `${room.Building_Name}-${room.Room_Name}`
+                                                if (!roomSections[key]) {
+                                                  loadRoomSections(room.Building_Name, room.Room_Name)
+                                                }
+                                              }}
+                                            >
+                                              <Badge 
+                                                variant="default" 
+                                                className="cursor-pointer hover:bg-primary/80 transition-colors flex items-center gap-1"
+                                              >
+                                                <BookOpen className="h-3 w-3" />
+                                                {room.UsageCount}
+                                              </Badge>
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent 
+                                            className={cn(
+                                              "w-80 p-0",
+                                              neoBrutalismMode 
+                                                ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                : ""
+                                            )}
+                                            align="end"
+                                          >
+                                            <div className="p-3">
+                                              <div className="flex items-center justify-between mb-2">
+                                                <h4 className={cn(
+                                                  "font-semibold text-sm",
+                                                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                                )}>
+                                                  {t('admin.sections')} - {room.Building_Name} {room.Room_Name}
+                                                </h4>
+                                              </div>
+                                              <ScrollArea className="h-[200px] pr-4">
+                                                {loadingSections[`${room.Building_Name}-${room.Room_Name}`] ? (
+                                                  <div className="flex items-center justify-center py-8">
+                                                    <Loader2 className="h-5 w-5 animate-spin text-[#3bafa8]" />
+                                                  </div>
+                                                ) : (
+                                                  <div className="space-y-2">
+                                                    {roomSections[`${room.Building_Name}-${room.Room_Name}`]?.length > 0 ? (
+                                                      roomSections[`${room.Building_Name}-${room.Room_Name}`].map((section, idx) => (
+                                                        <div 
+                                                          key={idx}
+                                                          className={cn(
+                                                            "p-2 rounded-md border",
+                                                            neoBrutalismMode 
+                                                              ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                              : "border-gray-200 dark:border-gray-700"
+                                                          )}
+                                                        >
+                                                          <div className="text-sm font-medium">
+                                                            {section.Course_ID} - {section.Section_ID}
+                                                          </div>
+                                                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                                                            {section.Course_Name}
+                                                          </div>
+                                                          <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                                            {t('admin.semester')}: {section.Semester}
+                                                          </div>
+                                                        </div>
+                                                      ))
+                                                    ) : (
+                                                      <span className="text-sm text-gray-500 dark:text-gray-400 py-4">
+                                                        {t('admin.noSections')}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </ScrollArea>
+                                            </div>
+                                          </PopoverContent>
+                                        </Popover>
+                                      ) : (
+                                        <Badge variant="secondary">
+                                          0 {t('admin.sections')}
+                                        </Badge>
+                                      )}
                                     </div>
                                     <div className="flex items-center justify-between text-sm">
                                       <span className="text-gray-600 dark:text-gray-400">

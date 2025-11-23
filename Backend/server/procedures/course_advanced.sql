@@ -668,6 +668,31 @@ BEGIN
 END
 GO
 
+-- ==================== GET ROOM SECTIONS ====================
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetRoomSections]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[GetRoomSections]
+GO
+
+CREATE PROCEDURE [dbo].[GetRoomSections]
+    @Building_Name NVARCHAR(10),
+    @Room_Name NVARCHAR(10)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        tp.Section_ID,
+        tp.Course_ID,
+        c.Name as Course_Name,
+        tp.Semester
+    FROM [takes_place] tp
+    INNER JOIN [Course] c ON tp.Course_ID = c.Course_ID
+    WHERE tp.Building_Name = @Building_Name
+        AND tp.Room_Name = @Room_Name
+    ORDER BY tp.Semester, tp.Course_ID, tp.Section_ID;
+END
+GO
+
 -- ==================== GET ALL ROOMS WITH EQUIPMENT COUNT ====================
 -- Update GetAllRooms to include equipment count
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetAllRooms]') AND type in (N'P', N'PC'))
@@ -703,3 +728,218 @@ BEGIN
 END
 GO
 
+-- ==================== SCHEDULE MANAGEMENT PROCEDURES ====================
+
+-- ==================== GET SECTION SCHEDULE ====================
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetSectionSchedule]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[GetSectionSchedule]
+GO
+
+CREATE PROCEDURE [dbo].[GetSectionSchedule]
+    @Section_ID NVARCHAR(10),
+    @Course_ID NVARCHAR(15),
+    @Semester NVARCHAR(10)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        Section_ID,
+        Course_ID,
+        Semester,
+        Day_of_Week,
+        Start_Period,
+        End_Period
+    FROM [Scheduler]
+    WHERE Section_ID = @Section_ID
+        AND Course_ID = @Course_ID
+        AND Semester = @Semester
+    ORDER BY Day_of_Week, Start_Period;
+END
+GO
+
+-- ==================== CREATE SCHEDULE ENTRY ====================
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[CreateScheduleEntry]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[CreateScheduleEntry]
+GO
+
+CREATE PROCEDURE [dbo].[CreateScheduleEntry]
+    @Section_ID NVARCHAR(10),
+    @Course_ID NVARCHAR(15),
+    @Semester NVARCHAR(10),
+    @Day_of_Week INT,
+    @Start_Period INT,
+    @End_Period INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Check if section exists
+    IF NOT EXISTS (SELECT 1 FROM [Section] WHERE Section_ID = @Section_ID AND Course_ID = @Course_ID AND Semester = @Semester)
+    BEGIN
+        RAISERROR('Section does not exist', 16, 1)
+        RETURN
+    END
+    
+    -- Validate Day_of_Week (1-7)
+    IF @Day_of_Week < 1 OR @Day_of_Week > 7
+    BEGIN
+        RAISERROR('Day_of_Week must be between 1 and 7', 16, 1)
+        RETURN
+    END
+    
+    -- Validate periods
+    IF @Start_Period < 1 OR @Start_Period > 13 OR @End_Period < 1 OR @End_Period > 13
+    BEGIN
+        RAISERROR('Periods must be between 1 and 13', 16, 1)
+        RETURN
+    END
+    
+    IF @Start_Period >= @End_Period
+    BEGIN
+        RAISERROR('Start_Period must be less than End_Period', 16, 1)
+        RETURN
+    END
+    
+    -- Check for conflicts (same day and overlapping periods)
+    IF EXISTS (SELECT 1 FROM [Scheduler] 
+               WHERE Section_ID = @Section_ID 
+                 AND Course_ID = @Course_ID 
+                 AND Semester = @Semester
+                 AND Day_of_Week = @Day_of_Week
+                 AND ((Start_Period <= @Start_Period AND End_Period > @Start_Period)
+                      OR (Start_Period < @End_Period AND End_Period >= @End_Period)
+                      OR (Start_Period >= @Start_Period AND End_Period <= @End_Period)))
+    BEGIN
+        RAISERROR('Schedule conflict: overlapping time periods on the same day', 16, 1)
+        RETURN
+    END
+    
+    -- Insert schedule entry
+    INSERT INTO [Scheduler] (Section_ID, Course_ID, Semester, Day_of_Week, Start_Period, End_Period)
+    VALUES (@Section_ID, @Course_ID, @Semester, @Day_of_Week, @Start_Period, @End_Period)
+    
+    SELECT 'Schedule entry created successfully' as Message
+END
+GO
+
+-- ==================== UPDATE SCHEDULE ENTRY ====================
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[UpdateScheduleEntry]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[UpdateScheduleEntry]
+GO
+
+CREATE PROCEDURE [dbo].[UpdateScheduleEntry]
+    @Section_ID NVARCHAR(10),
+    @Course_ID NVARCHAR(15),
+    @Semester NVARCHAR(10),
+    @Old_Day_of_Week INT,
+    @Old_Start_Period INT,
+    @Old_End_Period INT,
+    @New_Day_of_Week INT = NULL,
+    @New_Start_Period INT = NULL,
+    @New_End_Period INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Check if schedule entry exists
+    IF NOT EXISTS (SELECT 1 FROM [Scheduler] 
+                   WHERE Section_ID = @Section_ID 
+                     AND Course_ID = @Course_ID 
+                     AND Semester = @Semester
+                     AND Day_of_Week = @Old_Day_of_Week
+                     AND Start_Period = @Old_Start_Period
+                     AND End_Period = @Old_End_Period)
+    BEGIN
+        RAISERROR('Schedule entry does not exist', 16, 1)
+        RETURN
+    END
+    
+    DECLARE @Final_Day_of_Week INT = ISNULL(@New_Day_of_Week, @Old_Day_of_Week)
+    DECLARE @Final_Start_Period INT = ISNULL(@New_Start_Period, @Old_Start_Period)
+    DECLARE @Final_End_Period INT = ISNULL(@New_End_Period, @Old_End_Period)
+    
+    -- Validate Day_of_Week (1-7)
+    IF @Final_Day_of_Week < 1 OR @Final_Day_of_Week > 7
+    BEGIN
+        RAISERROR('Day_of_Week must be between 1 and 7', 16, 1)
+        RETURN
+    END
+    
+    -- Validate periods
+    IF @Final_Start_Period < 1 OR @Final_Start_Period > 13 OR @Final_End_Period < 1 OR @Final_End_Period > 13
+    BEGIN
+        RAISERROR('Periods must be between 1 and 13', 16, 1)
+        RETURN
+    END
+    
+    IF @Final_Start_Period >= @Final_End_Period
+    BEGIN
+        RAISERROR('Start_Period must be less than End_Period', 16, 1)
+        RETURN
+    END
+    
+    -- Check for conflicts (excluding the current entry)
+    IF EXISTS (SELECT 1 FROM [Scheduler] 
+               WHERE Section_ID = @Section_ID 
+                 AND Course_ID = @Course_ID 
+                 AND Semester = @Semester
+                 AND Day_of_Week = @Final_Day_of_Week
+                 AND NOT (Day_of_Week = @Old_Day_of_Week AND Start_Period = @Old_Start_Period AND End_Period = @Old_End_Period)
+                 AND ((Start_Period <= @Final_Start_Period AND End_Period > @Final_Start_Period)
+                      OR (Start_Period < @Final_End_Period AND End_Period >= @Final_End_Period)
+                      OR (Start_Period >= @Final_Start_Period AND End_Period <= @Final_End_Period)))
+    BEGIN
+        RAISERROR('Schedule conflict: overlapping time periods on the same day', 16, 1)
+        RETURN
+    END
+    
+    -- Update schedule entry
+    UPDATE [Scheduler]
+    SET Day_of_Week = @Final_Day_of_Week,
+        Start_Period = @Final_Start_Period,
+        End_Period = @Final_End_Period
+    WHERE Section_ID = @Section_ID
+        AND Course_ID = @Course_ID
+        AND Semester = @Semester
+        AND Day_of_Week = @Old_Day_of_Week
+        AND Start_Period = @Old_Start_Period
+        AND End_Period = @Old_End_Period
+    
+    SELECT 'Schedule entry updated successfully' as Message
+END
+GO
+
+-- ==================== DELETE SCHEDULE ENTRY ====================
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[DeleteScheduleEntry]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[DeleteScheduleEntry]
+GO
+
+CREATE PROCEDURE [dbo].[DeleteScheduleEntry]
+    @Section_ID NVARCHAR(10),
+    @Course_ID NVARCHAR(15),
+    @Semester NVARCHAR(10),
+    @Day_of_Week INT,
+    @Start_Period INT,
+    @End_Period INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DELETE FROM [Scheduler]
+    WHERE Section_ID = @Section_ID
+        AND Course_ID = @Course_ID
+        AND Semester = @Semester
+        AND Day_of_Week = @Day_of_Week
+        AND Start_Period = @Start_Period
+        AND End_Period = @End_Period
+    
+    IF @@ROWCOUNT = 0
+    BEGIN
+        RAISERROR('Schedule entry not found', 16, 1)
+        RETURN
+    END
+    
+    SELECT 'Schedule entry deleted successfully' as Message
+END
+GO

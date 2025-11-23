@@ -266,6 +266,23 @@ export interface RoomEquipment {
   Room_Name: string
 }
 
+export interface RoomSection {
+  Section_ID: string
+  Course_ID: string
+  Course_Name: string
+  Semester: string
+}
+
+// Schedule
+export interface ScheduleEntry {
+  Section_ID: string
+  Course_ID: string
+  Semester: string
+  Day_of_Week: number
+  Start_Period: number
+  End_Period: number
+}
+
 // Audit Log
 export interface AuditLog {
   LogID: number
@@ -856,6 +873,11 @@ export const adminService = {
     return response.data
   },
 
+  async getRoomSections(buildingName: string, roomName: string): Promise<RoomSection[]> {
+    const response = await apiClient.get(`/admin/rooms/${encodeURIComponent(buildingName)}/${encodeURIComponent(roomName)}/sections`)
+    return response.data
+  },
+
   async deleteRoom(buildingName: string, roomName: string): Promise<void> {
     await apiClient.delete(`/admin/rooms/${encodeURIComponent(buildingName)}/${encodeURIComponent(roomName)}`)
   },
@@ -886,6 +908,65 @@ export const adminService = {
     roomName: string
   ): Promise<void> {
     await apiClient.delete(`/admin/sections/${sectionId}/${courseId}/${semester}/rooms/${encodeURIComponent(buildingName)}/${encodeURIComponent(roomName)}`)
+  },
+
+  // Schedule Management
+  async getSectionSchedule(sectionId: string, courseId: string, semester: string): Promise<ScheduleEntry[]> {
+    const response = await apiClient.get(`/admin/sections/${sectionId}/${courseId}/${semester}/schedule`)
+    return response.data
+  },
+
+  async createScheduleEntry(
+    sectionId: string,
+    courseId: string,
+    semester: string,
+    dayOfWeek: number,
+    startPeriod: number,
+    endPeriod: number
+  ): Promise<void> {
+    await apiClient.post(`/admin/sections/${sectionId}/${courseId}/${semester}/schedule`, {
+      Day_of_Week: dayOfWeek,
+      Start_Period: startPeriod,
+      End_Period: endPeriod
+    })
+  },
+
+  async updateScheduleEntry(
+    sectionId: string,
+    courseId: string,
+    semester: string,
+    oldDayOfWeek: number,
+    oldStartPeriod: number,
+    oldEndPeriod: number,
+    newDayOfWeek?: number,
+    newStartPeriod?: number,
+    newEndPeriod?: number
+  ): Promise<void> {
+    await apiClient.put(`/admin/sections/${sectionId}/${courseId}/${semester}/schedule`, {
+      Old_Day_of_Week: oldDayOfWeek,
+      Old_Start_Period: oldStartPeriod,
+      Old_End_Period: oldEndPeriod,
+      New_Day_of_Week: newDayOfWeek,
+      New_Start_Period: newStartPeriod,
+      New_End_Period: newEndPeriod
+    })
+  },
+
+  async deleteScheduleEntry(
+    sectionId: string,
+    courseId: string,
+    semester: string,
+    dayOfWeek: number,
+    startPeriod: number,
+    endPeriod: number
+  ): Promise<void> {
+    await apiClient.delete(`/admin/sections/${sectionId}/${courseId}/${semester}/schedule`, {
+      data: {
+        Day_of_Week: dayOfWeek,
+        Start_Period: startPeriod,
+        End_Period: endPeriod
+      }
+    })
   },
 
   // Audit Logs

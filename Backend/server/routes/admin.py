@@ -1658,6 +1658,32 @@ def get_room_equipment(building_name, room_name):
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'Failed to fetch room equipment: {str(e)}'}), 500
 
+@admin_bp.route('/rooms/<string:building_name>/<string:room_name>/sections', methods=['GET'])
+def get_room_sections(building_name, room_name):
+    """Get sections that use a specific room - Using stored procedure"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetRoomSections %s, %s', (building_name, room_name))
+        sections = cursor.fetchall()
+        conn.close()
+
+        result = []
+        for section in sections:
+            result.append({
+                'Section_ID': section[0],
+                'Course_ID': section[1],
+                'Course_Name': section[2],
+                'Semester': section[3],
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        print(f'Get room sections error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to fetch room sections: {str(e)}'}), 500
+
 @admin_bp.route('/sections/<string:section_id>/<string:course_id>/<string:semester>/rooms', methods=['GET'])
 def get_section_rooms(section_id, course_id, semester):
     """Get rooms assigned to a section - Using stored procedure"""
@@ -1729,6 +1755,109 @@ def remove_room_from_section(section_id, course_id, semester, building_name, roo
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'Failed to remove room: {str(e)}'}), 500
+
+# ==================== SCHEDULE MANAGEMENT ====================
+
+@admin_bp.route('/sections/<string:section_id>/<string:course_id>/<string:semester>/schedule', methods=['GET'])
+def get_section_schedule(section_id, course_id, semester):
+    """Get schedule for a section - Using stored procedure"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetSectionSchedule %s, %s, %s', (section_id, course_id, semester))
+        schedule = cursor.fetchall()
+        conn.close()
+
+        result = []
+        for entry in schedule:
+            result.append({
+                'Section_ID': entry[0],
+                'Course_ID': entry[1],
+                'Semester': entry[2],
+                'Day_of_Week': entry[3],
+                'Start_Period': entry[4],
+                'End_Period': entry[5],
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        print(f'Get section schedule error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to fetch section schedule: {str(e)}'}), 500
+
+@admin_bp.route('/sections/<string:section_id>/<string:course_id>/<string:semester>/schedule', methods=['POST'])
+def create_schedule_entry(section_id, course_id, semester):
+    """Create a schedule entry for a section - Using stored procedure"""
+    try:
+        data = request.get_json()
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC CreateScheduleEntry %s, %s, %s, %s, %s, %s',
+                      (section_id, course_id, semester,
+                       data['Day_of_Week'], data['Start_Period'], data['End_Period']))
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': 'Schedule entry created successfully'
+        })
+    except Exception as e:
+        print(f'Create schedule entry error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to create schedule entry: {str(e)}'}), 500
+
+@admin_bp.route('/sections/<string:section_id>/<string:course_id>/<string:semester>/schedule', methods=['PUT'])
+def update_schedule_entry(section_id, course_id, semester):
+    """Update a schedule entry for a section - Using stored procedure"""
+    try:
+        data = request.get_json()
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC UpdateScheduleEntry %s, %s, %s, %s, %s, %s, %s, %s, %s',
+                      (section_id, course_id, semester,
+                       data['Old_Day_of_Week'], data['Old_Start_Period'], data['Old_End_Period'],
+                       data.get('New_Day_of_Week'), data.get('New_Start_Period'), data.get('New_End_Period')))
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': 'Schedule entry updated successfully'
+        })
+    except Exception as e:
+        print(f'Update schedule entry error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to update schedule entry: {str(e)}'}), 500
+
+@admin_bp.route('/sections/<string:section_id>/<string:course_id>/<string:semester>/schedule', methods=['DELETE'])
+def delete_schedule_entry(section_id, course_id, semester):
+    """Delete a schedule entry for a section - Using stored procedure"""
+    try:
+        data = request.get_json()
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('EXEC DeleteScheduleEntry %s, %s, %s, %s, %s, %s',
+                      (section_id, course_id, semester,
+                       data['Day_of_Week'], data['Start_Period'], data['End_Period']))
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': 'Schedule entry deleted successfully'
+        })
+    except Exception as e:
+        print(f'Delete schedule entry error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to delete schedule entry: {str(e)}'}), 500
 
 # ==================== ADMIN ACCOUNTS MANAGEMENT ====================
 
