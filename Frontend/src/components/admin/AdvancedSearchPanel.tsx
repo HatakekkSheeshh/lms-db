@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DatePicker } from '@/components/ui/date-time-picker'
 import { Search, Filter, X, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { 
@@ -26,8 +25,6 @@ export interface SearchFilters {
   search?: string
   min_credit?: number
   max_credit?: number
-  start_date_from?: string
-  start_date_to?: string
   has_sections?: boolean
   has_students?: boolean
 }
@@ -56,18 +53,6 @@ export default function AdvancedSearchPanel({
   }
 
   const hasActiveFilters = Object.values(filters).some(v => v !== undefined && v !== '')
-
-  // Convert string dates to Date objects for DatePicker
-  const startDateFrom = filters.start_date_from ? new Date(filters.start_date_from) : undefined
-  const startDateTo = filters.start_date_to ? new Date(filters.start_date_to) : undefined
-
-  const handleStartDateFromChange = (date: Date | undefined) => {
-    updateFilter('start_date_from', date ? date.toISOString().split('T')[0] : undefined)
-  }
-
-  const handleStartDateToChange = (date: Date | undefined) => {
-    updateFilter('start_date_to', date ? date.toISOString().split('T')[0] : undefined)
-  }
 
   return (
     <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
@@ -168,48 +153,6 @@ export default function AdvancedSearchPanel({
                     "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
                     getNeoBrutalismInputClasses(neoBrutalismMode)
                   )}
-                />
-              </div>
-
-              {/* Date Range */}
-              <div className="space-y-2">
-                <Label className={cn(
-                  "text-[#211c37] dark:text-white text-sm",
-                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                )}>
-                  {t('admin.startDateFrom')}
-                </Label>
-                <DatePicker
-                  date={startDateFrom}
-                  onDateChange={handleStartDateFromChange}
-                  placeholder={t('admin.selectDate') || "Select date"}
-                  className={cn(
-                    "w-full",
-                    neoBrutalismMode 
-                      ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
-                      : ""
-                  )}
-                  maxDate={startDateTo}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className={cn(
-                  "text-[#211c37] dark:text-white text-sm",
-                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                )}>
-                  {t('admin.startDateTo')}
-                </Label>
-                <DatePicker
-                  date={startDateTo}
-                  onDateChange={handleStartDateToChange}
-                  placeholder={t('admin.selectDate') || "Select date"}
-                  className={cn(
-                    "w-full",
-                    neoBrutalismMode 
-                      ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
-                      : ""
-                  )}
-                  minDate={startDateFrom}
                 />
               </div>
 

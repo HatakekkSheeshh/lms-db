@@ -153,7 +153,6 @@ BEGIN
             t.Section_ID,
             t.Semester,
             c.Name AS Course_Name,
-            c.Start_Date,
             t.Role_Specification,
             t.Timestamp
         FROM [Teaches] t

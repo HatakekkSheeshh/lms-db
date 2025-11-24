@@ -19,7 +19,6 @@ export interface AdminCourse {
   Course_ID: string
   Name: string
   Credit: number | null
-  Start_Date: string | null
   SectionCount?: number
   StudentCount?: number
   TutorCount?: number
@@ -29,7 +28,6 @@ export interface CourseDetails {
   Course_ID: string
   Name: string
   Credit: number | null
-  Start_Date: string | null
   TotalSections: number
   TotalStudents: number
   TotalTutors: number
@@ -290,6 +288,13 @@ export interface ScheduleByRoomEntry extends ScheduleEntry {
   Room_Name: string
 }
 
+export interface ScheduleByUserEntry extends ScheduleEntry {
+  Enrollment_Status?: string
+  Final_Grade?: number
+  Role_Specification?: string
+  RoomsInfo?: string
+}
+
 // Audit Log
 export interface AuditLog {
   LogID: number
@@ -488,8 +493,6 @@ export const adminService = {
     search?: string
     min_credit?: number
     max_credit?: number
-    start_date_from?: string
-    start_date_to?: string
     has_sections?: boolean
     has_students?: boolean
   }): Promise<AdminCourse[]> {
@@ -497,8 +500,6 @@ export const adminService = {
     if (params.search) queryParams.append('search', params.search)
     if (params.min_credit !== undefined) queryParams.append('min_credit', params.min_credit.toString())
     if (params.max_credit !== undefined) queryParams.append('max_credit', params.max_credit.toString())
-    if (params.start_date_from) queryParams.append('start_date_from', params.start_date_from)
-    if (params.start_date_to) queryParams.append('start_date_to', params.start_date_to)
     if (params.has_sections !== undefined) queryParams.append('has_sections', params.has_sections.toString())
     if (params.has_students !== undefined) queryParams.append('has_students', params.has_students.toString())
     
@@ -1003,6 +1004,16 @@ export const adminService = {
     if (params?.semester) queryParams.append('semester', params.semester)
     
     const response = await apiClient.get(`/admin/schedules/by-room?${queryParams.toString()}`)
+    return response.data
+  },
+
+  async getAllSchedulesByUser(params: { university_id: number; user_type: 'student' | 'tutor'; semester?: string }): Promise<ScheduleByUserEntry[]> {
+    const queryParams = new URLSearchParams()
+    queryParams.append('university_id', params.university_id.toString())
+    queryParams.append('user_type', params.user_type)
+    if (params.semester) queryParams.append('semester', params.semester)
+    
+    const response = await apiClient.get(`/admin/schedules/by-user?${queryParams.toString()}`)
     return response.data
   },
 

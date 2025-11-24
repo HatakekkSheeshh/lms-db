@@ -28,15 +28,14 @@ def get_all_courses():
 
         result = []
         for course in courses:
-            # Tuple access: Course_ID, Name, Credit, Start_Date, SectionCount, StudentCount, TutorCount
+            # Tuple access: Course_ID, Name, Credit, SectionCount, StudentCount, TutorCount
             result.append({
                 'Course_ID': course[0],
                 'Name': course[1],
                 'Credit': course[2] if course[2] is not None else None,
-                'Start_Date': str(course[3]) if course[3] else None,
-                'SectionCount': int(course[4]) if len(course) > 4 and course[4] is not None else 0,
-                'StudentCount': int(course[5]) if len(course) > 5 and course[5] is not None else 0,
-                'TutorCount': int(course[6]) if len(course) > 6 and course[6] is not None else 0,
+                'SectionCount': int(course[3]) if len(course) > 3 and course[3] is not None else 0,
+                'StudentCount': int(course[4]) if len(course) > 4 and course[4] is not None else 0,
+                'TutorCount': int(course[5]) if len(course) > 5 and course[5] is not None else 0,
             })
 
         return jsonify(result)
@@ -54,11 +53,10 @@ def create_course():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute('EXEC CreateCourse %s, %s, %s, %s', (
+        cursor.execute('EXEC CreateCourse %s, %s, %s', (
             data['Course_ID'],
             data['Name'],
-            data.get('Credit'),
-            data.get('Start_Date')
+            data.get('Credit')
         ))
 
         result = cursor.fetchone()
@@ -72,7 +70,6 @@ def create_course():
                 'Course_ID': result[0],
                 'Name': result[1],
                 'Credit': result[2],
-                'Start_Date': str(result[3]) if result[3] else None,
             }
         }), 201
     except Exception as e:
@@ -89,11 +86,10 @@ def update_course(course_id):
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute('EXEC UpdateCourse %s, %s, %s, %s', (
+        cursor.execute('EXEC UpdateCourse %s, %s, %s', (
             course_id,
             data.get('Name'),
-            data.get('Credit'),
-            data.get('Start_Date')
+            data.get('Credit')
         ))
 
         result = cursor.fetchone()
@@ -107,7 +103,6 @@ def update_course(course_id):
                 'Course_ID': result[0],
                 'Name': result[1],
                 'Credit': result[2],
-                'Start_Date': str(result[3]) if result[3] else None,
             }
         })
     except Exception as e:
@@ -142,8 +137,6 @@ def search_courses():
         search_query = request.args.get('search', None)
         min_credit = request.args.get('min_credit', type=int)
         max_credit = request.args.get('max_credit', type=int)
-        start_date_from = request.args.get('start_date_from', None)
-        start_date_to = request.args.get('start_date_to', None)
         has_sections = request.args.get('has_sections', type=lambda x: x.lower() == 'true' if x else None)
         has_students = request.args.get('has_students', type=lambda x: x.lower() == 'true' if x else None)
         
@@ -152,12 +145,10 @@ def search_courses():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        cursor.execute('EXEC SearchCourses %s, %s, %s, %s, %s, %s, %s', (
+        cursor.execute('EXEC SearchCourses %s, %s, %s, %s, %s', (
             search_query,
             min_credit,
             max_credit,
-            start_date_from,
-            start_date_to,
             has_sections,
             has_students
         ))
@@ -174,10 +165,9 @@ def search_courses():
                 'Course_ID': course[0],
                 'Name': course[1],
                 'Credit': course[2],
-                'Start_Date': str(course[3]) if course[3] else None,
-                'SectionCount': course[4] if len(course) > 4 else 0,
-                'StudentCount': course[5] if len(course) > 5 else 0,
-                'TutorCount': course[6] if len(course) > 6 else 0,
+                'SectionCount': course[3] if len(course) > 3 else 0,
+                'StudentCount': course[4] if len(course) > 4 else 0,
+                'TutorCount': course[5] if len(course) > 5 else 0,
             })
         
         return jsonify(result)
@@ -205,13 +195,12 @@ def get_course_details(course_id):
             'Course_ID': result[0],
             'Name': result[1],
             'Credit': result[2],
-            'Start_Date': str(result[3]) if result[3] else None,
-            'TotalSections': result[4] if len(result) > 4 else 0,
-            'TotalStudents': result[5] if len(result) > 5 else 0,
-            'TotalTutors': result[6] if len(result) > 6 else 0,
-            'TotalAssignments': result[7] if len(result) > 7 else 0,
-            'TotalQuizzes': result[8] if len(result) > 8 else 0,
-            'AverageFinalGrade': float(result[9]) if len(result) > 9 and result[9] else None,
+            'TotalSections': result[3] if len(result) > 3 else 0,
+            'TotalStudents': result[4] if len(result) > 4 else 0,
+            'TotalTutors': result[5] if len(result) > 5 else 0,
+            'TotalAssignments': result[6] if len(result) > 6 else 0,
+            'TotalQuizzes': result[7] if len(result) > 7 else 0,
+            'AverageFinalGrade': float(result[8]) if len(result) > 8 and result[8] else None,
         })
     except Exception as e:
         print(f'Get course details error: {e}')
@@ -413,9 +402,8 @@ def get_courses_by_semester(semester):
                 'Course_ID': course[0],
                 'Name': course[1],
                 'Credit': course[2],
-                'Start_Date': str(course[3]) if course[3] else None,
-                'SectionCount': course[4] if len(course) > 4 else 0,
-                'StudentCount': course[5] if len(course) > 5 else 0,
+                'SectionCount': course[3] if len(course) > 3 else 0,
+                'StudentCount': course[4] if len(course) > 4 else 0,
             })
         
         return jsonify(result)
@@ -2093,6 +2081,69 @@ def get_schedules_by_room():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'Failed to fetch schedules by room: {str(e)}'}), 500
+
+@admin_bp.route('/schedules/by-user', methods=['GET'])
+@require_auth
+@require_role(['admin'])
+def get_schedules_by_user():
+    """Get schedules for a specific user (student or tutor) - Using stored procedure"""
+    try:
+        university_id = request.args.get('university_id', type=int)
+        user_type = request.args.get('user_type', type=str, default='student')  # 'student' or 'tutor'
+        semester = request.args.get('semester', type=str)
+        
+        if not university_id:
+            return jsonify({'success': False, 'error': 'university_id is required'}), 400
+        
+        if user_type not in ['student', 'tutor']:
+            return jsonify({'success': False, 'error': 'user_type must be "student" or "tutor"'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetSchedulesByUser %s, %s, %s', (university_id, user_type, semester))
+        schedules = cursor.fetchall()
+        conn.close()
+
+        result = []
+        for schedule in schedules:
+            if user_type == 'student':
+                # Student schedule: Section_ID, Course_ID, Semester, Day_of_Week, Day_Name, Start_Period, End_Period, Course_Name, Enrollment_Status, Final_Grade, RoomsInfo
+                schedule_dict = {
+                    'Section_ID': schedule[0],
+                    'Course_ID': schedule[1],
+                    'Semester': schedule[2],
+                    'Day_of_Week': schedule[3],
+                    'Day_Name': schedule[4],
+                    'Start_Period': schedule[5],
+                    'End_Period': schedule[6],
+                    'Course_Name': schedule[7],
+                    'Enrollment_Status': schedule[8] if len(schedule) > 8 else None,
+                    'Final_Grade': float(schedule[9]) if len(schedule) > 9 and schedule[9] is not None else None,
+                    'RoomsInfo': schedule[10] if len(schedule) > 10 else None,
+                }
+            else:  # tutor
+                # Tutor schedule: Section_ID, Course_ID, Semester, Day_of_Week, Day_Name, Start_Period, End_Period, Course_Name, Role_Specification, RoomsInfo
+                schedule_dict = {
+                    'Section_ID': schedule[0],
+                    'Course_ID': schedule[1],
+                    'Semester': schedule[2],
+                    'Day_of_Week': schedule[3],
+                    'Day_Name': schedule[4],
+                    'Start_Period': schedule[5],
+                    'End_Period': schedule[6],
+                    'Course_Name': schedule[7],
+                    'Role_Specification': schedule[8] if len(schedule) > 8 else None,
+                    'RoomsInfo': schedule[9] if len(schedule) > 9 else None,
+                }
+            
+            result.append(schedule_dict)
+
+        return jsonify(result)
+    except Exception as e:
+        print(f'Get schedules by user error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to fetch schedules by user: {str(e)}'}), 500
 
 # ==================== ADMIN ACCOUNTS MANAGEMENT ====================
 

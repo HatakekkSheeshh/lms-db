@@ -20,7 +20,6 @@ import {
 } from '@/lib/utils/theme-utils'
 import { 
   BookOpen, 
-  Calendar, 
   Award, 
   Search, 
   Filter,
@@ -188,12 +187,6 @@ export default function CourseListPage() {
                         <Award className="w-4 h-4" />
                         <span>{course.Credit} {t('courses.credits')}</span>
                       </div>
-                      {course.Start_Date && (
-                        <div className="flex items-center gap-2 text-[#676767] dark:text-gray-400">
-                          <Calendar className="w-4 h-4" />
-                          <span>{new Date(course.Start_Date).toLocaleDateString('vi-VN')}</span>
-                        </div>
-                      )}
                       <div className="flex items-center gap-2 text-[#676767] dark:text-gray-400">
                         <Users className="w-4 h-4" />
                         <span>120 {t('courses.students')}</span>

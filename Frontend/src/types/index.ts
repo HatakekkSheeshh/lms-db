@@ -32,7 +32,6 @@ export interface Course {
   Course_ID: number
   Name: string
   Credit: number
-  Start_Date?: string
 }
 
 export interface Section {

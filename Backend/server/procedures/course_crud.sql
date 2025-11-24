@@ -10,7 +10,7 @@ CREATE PROCEDURE [dbo].[GetAllCourses]
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT Course_ID, Name, Credit, Start_Date 
+    SELECT Course_ID, Name, Credit
     FROM [Course] 
     ORDER BY Course_ID;
 END
@@ -31,7 +31,6 @@ BEGIN
         c.Course_ID,
         c.Name,
         c.Credit,
-        c.Start_Date,
         -- Count distinct sections for this course
         (SELECT COUNT(*) 
          FROM [Section] s 
@@ -63,17 +62,16 @@ GO
 CREATE PROCEDURE [dbo].[CreateCourse]
     @Course_ID NVARCHAR(15),
     @Name NVARCHAR(100),
-    @Credit INT = NULL,
-    @Start_Date DATE = NULL
+    @Credit INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     
     BEGIN TRY
-        INSERT INTO [Course] (Course_ID, Name, Credit, Start_Date)
-        VALUES (@Course_ID, @Name, @Credit, @Start_Date);
+        INSERT INTO [Course] (Course_ID, Name, Credit)
+        VALUES (@Course_ID, @Name, @Credit);
         
-        SELECT @Course_ID as Course_ID, @Name as Name, @Credit as Credit, @Start_Date as Start_Date;
+        SELECT @Course_ID as Course_ID, @Name as Name, @Credit as Credit;
     END TRY
     BEGIN CATCH
         THROW;
@@ -89,8 +87,7 @@ GO
 CREATE PROCEDURE [dbo].[UpdateCourse]
     @Course_ID NVARCHAR(15),
     @Name NVARCHAR(100) = NULL,
-    @Credit INT = NULL,
-    @Start_Date DATE = NULL
+    @Credit INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -99,14 +96,13 @@ BEGIN
         UPDATE [Course]
         SET 
             Name = ISNULL(@Name, Name),
-            Credit = ISNULL(@Credit, Credit),
-            Start_Date = ISNULL(@Start_Date, Start_Date)
+            Credit = ISNULL(@Credit, Credit)
         WHERE Course_ID = @Course_ID;
         
         IF @@ROWCOUNT = 0
             THROW 50001, 'Course not found', 1;
             
-        SELECT Course_ID, Name, Credit, Start_Date 
+        SELECT Course_ID, Name, Credit
         FROM [Course] 
         WHERE Course_ID = @Course_ID;
     END TRY

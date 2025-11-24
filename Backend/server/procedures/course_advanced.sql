@@ -13,8 +13,6 @@ CREATE PROCEDURE [dbo].[SearchCourses]
     @SearchQuery NVARCHAR(100) = NULL,
     @MinCredit INT = NULL,
     @MaxCredit INT = NULL,
-    @StartDateFrom DATE = NULL,
-    @StartDateTo DATE = NULL,
     @HasSections BIT = NULL,
     @HasStudents BIT = NULL
 AS
@@ -25,7 +23,6 @@ BEGIN
         c.Course_ID,
         c.Name,
         c.Credit,
-        c.Start_Date,
         (SELECT COUNT(*) FROM [Section] s WHERE s.Course_ID = c.Course_ID) as SectionCount,
         (SELECT COUNT(DISTINCT a.University_ID) 
          FROM [Assessment] a 
@@ -42,8 +39,6 @@ BEGIN
          c.Name LIKE '%' + @SearchQuery + '%')
         AND (@MinCredit IS NULL OR c.Credit >= @MinCredit)
         AND (@MaxCredit IS NULL OR c.Credit <= @MaxCredit)
-        AND (@StartDateFrom IS NULL OR c.Start_Date >= @StartDateFrom)
-        AND (@StartDateTo IS NULL OR c.Start_Date <= @StartDateTo)
         AND (@HasSections IS NULL OR 
              (@HasSections = 1 AND EXISTS (SELECT 1 FROM [Section] s WHERE s.Course_ID = c.Course_ID)) OR
              (@HasSections = 0 AND NOT EXISTS (SELECT 1 FROM [Section] s WHERE s.Course_ID = c.Course_ID)))
@@ -75,7 +70,6 @@ BEGIN
         c.Course_ID,
         c.Name,
         c.Credit,
-        c.Start_Date,
         (SELECT COUNT(*) FROM [Section] s WHERE s.Course_ID = c.Course_ID) as TotalSections,
         (SELECT COUNT(DISTINCT a.University_ID) 
          FROM [Assessment] a 
@@ -311,7 +305,6 @@ BEGIN
         c.Course_ID,
         c.Name,
         c.Credit,
-        c.Start_Date,
         (SELECT COUNT(*) FROM [Section] s WHERE s.Course_ID = c.Course_ID AND s.Semester = @Semester) as SectionCount,
         (SELECT COUNT(DISTINCT a.University_ID) 
          FROM [Assessment] a 
@@ -1133,5 +1126,101 @@ BEGIN
         AND (@Room_Name IS NULL OR tp.Room_Name = @Room_Name)
         AND (@Semester IS NULL OR s.Semester = @Semester)
     ORDER BY tp.Building_Name, tp.Room_Name, s.Day_of_Week, s.Start_Period;
+END
+GO
+
+-- ==================== GET SCHEDULES BY USER ====================
+-- Get schedule for a specific user (student or tutor)
+-- For students: returns schedules of sections they are enrolled in (from Assessment table)
+-- For tutors: returns schedules of sections they teach (from Teaches table)
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetSchedulesByUser]') AND type in (N'P', N'PC'))
+    DROP PROCEDURE [dbo].[GetSchedulesByUser]
+GO
+
+CREATE PROCEDURE [dbo].[GetSchedulesByUser]
+    @University_ID DECIMAL(7,0),
+    @User_Type NVARCHAR(10) = 'student', -- 'student' or 'tutor'
+    @Semester NVARCHAR(10) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    IF @User_Type = 'student'
+    BEGIN
+        -- Get schedules for student (from enrolled sections)
+        SELECT 
+            s.Section_ID,
+            s.Course_ID,
+            s.Semester,
+            s.Day_of_Week,
+            CASE s.Day_of_Week
+                WHEN 1 THEN 'Monday'
+                WHEN 2 THEN 'Tuesday'
+                WHEN 3 THEN 'Wednesday'
+                WHEN 4 THEN 'Thursday'
+                WHEN 5 THEN 'Friday'
+                WHEN 6 THEN 'Saturday'
+            END AS Day_Name,
+            s.Start_Period,
+            s.End_Period,
+            c.Name as Course_Name,
+            a.Status as Enrollment_Status,
+            a.Final_Grade,
+            -- Room information
+            (SELECT STRING_AGG(CONCAT(tp.Building_Name, ' - ', tp.Room_Name), ', ')
+             FROM [takes_place] tp
+             WHERE tp.Section_ID = s.Section_ID 
+               AND tp.Course_ID = s.Course_ID 
+               AND tp.Semester = s.Semester) as RoomsInfo
+        FROM [Scheduler] s
+        INNER JOIN [Assessment] a ON s.Section_ID = a.Section_ID 
+            AND s.Course_ID = a.Course_ID 
+            AND s.Semester = a.Semester
+        INNER JOIN [Course] c ON s.Course_ID = c.Course_ID
+        WHERE a.University_ID = @University_ID
+            AND (@Semester IS NULL OR s.Semester = @Semester)
+            AND UPPER(LTRIM(RTRIM(a.Status))) = 'APPROVED' -- Only approved enrollments
+        ORDER BY s.Day_of_Week, s.Start_Period, s.Course_ID, s.Section_ID;
+    END
+    ELSE IF @User_Type = 'tutor'
+    BEGIN
+        -- Get schedules for tutor (from sections they teach)
+        SELECT 
+            s.Section_ID,
+            s.Course_ID,
+            s.Semester,
+            s.Day_of_Week,
+            CASE s.Day_of_Week
+                WHEN 1 THEN 'Monday'
+                WHEN 2 THEN 'Tuesday'
+                WHEN 3 THEN 'Wednesday'
+                WHEN 4 THEN 'Thursday'
+                WHEN 5 THEN 'Friday'
+                WHEN 6 THEN 'Saturday'
+            END AS Day_Name,
+            s.Start_Period,
+            s.End_Period,
+            c.Name as Course_Name,
+            t.Role_Specification,
+            -- Room information
+            (SELECT STRING_AGG(CONCAT(tp.Building_Name, ' - ', tp.Room_Name), ', ')
+             FROM [takes_place] tp
+             WHERE tp.Section_ID = s.Section_ID 
+               AND tp.Course_ID = s.Course_ID 
+               AND tp.Semester = s.Semester) as RoomsInfo
+        FROM [Scheduler] s
+        INNER JOIN [Teaches] t ON s.Section_ID = t.Section_ID 
+            AND s.Course_ID = t.Course_ID 
+            AND s.Semester = t.Semester
+        INNER JOIN [Course] c ON s.Course_ID = c.Course_ID
+        WHERE t.University_ID = @University_ID
+            AND (@Semester IS NULL OR s.Semester = @Semester)
+        ORDER BY s.Day_of_Week, s.Start_Period, s.Course_ID, s.Section_ID;
+    END
+    ELSE
+    BEGIN
+        RAISERROR('Invalid User_Type. Must be ''student'' or ''tutor''', 16, 1)
+        RETURN
+    END
 END
 GO

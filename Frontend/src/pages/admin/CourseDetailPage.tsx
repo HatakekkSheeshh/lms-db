@@ -1232,22 +1232,6 @@ export default function CourseDetailPage() {
                       </p>
                     </div>
                   )}
-                  {courseDetails.Start_Date && (
-                    <div>
-                      <p className={cn(
-                        "text-sm text-[#85878d] dark:text-gray-400 mb-1",
-                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                      )}>
-                        {t('admin.startDate')}
-                      </p>
-                      <p className={cn(
-                        "font-semibold text-[#211c37] dark:text-white",
-                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                      )}>
-                        {new Date(courseDetails.Start_Date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>

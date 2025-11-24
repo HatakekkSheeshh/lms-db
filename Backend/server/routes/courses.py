@@ -14,12 +14,11 @@ def get_courses():
 
         result = []
         for course in courses:
-            # Tuple access: Course_ID, Name, Credit, Start_Date
+            # Tuple access: Course_ID, Name, Credit
             result.append({
                 'Course_ID': course[0],
                 'Name': course[1] if course[1] else '',  # Name
                 'Credit': course[2] if course[2] is not None else 0,  # Credit
-                'Start_Date': str(course[3]) if course[3] else None,
             })
 
         return jsonify(result)
@@ -42,12 +41,11 @@ def get_course(id):
         if not course:
             return jsonify({'success': False, 'error': f'Course not found: {course_id}'}), 404
 
-        # Tuple access: Course_ID, Name, Credit, Start_Date
+        # Tuple access: Course_ID, Name, Credit
         return jsonify({
             'Course_ID': course[0],
             'Name': course[1] if course[1] else '',  # Name
             'Credit': course[2] if course[2] is not None else 0,  # Credit
-            'Start_Date': str(course[3]) if course[3] else None,
         })
     except Exception as e:
         print(f'Get course error: {e}')

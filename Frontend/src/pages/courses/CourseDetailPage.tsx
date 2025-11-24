@@ -19,7 +19,7 @@ import {
   getNeoBrutalismCardClasses, 
   getNeoBrutalismTextClasses 
 } from '@/lib/utils/theme-utils'
-import { ArrowLeft, BookOpen, Users, Award, Calendar, GraduationCap, BarChart3, Clock } from 'lucide-react'
+import { ArrowLeft, BookOpen, Users, Award, GraduationCap, BarChart3, Clock } from 'lucide-react'
 import CourseContentCard from '@/components/courses/CourseContentCard'
 import { format } from 'date-fns'
 
@@ -159,26 +159,6 @@ export default function CourseDetailPage() {
                   )}>{course.Credit} {t('courses.credits')}</p>
                 </div>
               </div>
-              {course.Start_Date && (
-                <div className={cn(
-                  "flex items-center gap-3 p-4 bg-[#f5f7f9] dark:bg-[#2a2a2a]",
-                  neoBrutalismMode 
-                    ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
-                    : "rounded-lg"
-                )}>
-                  <Calendar className="h-5 w-5 text-[#85878d] dark:text-gray-400" />
-                  <div>
-                    <p className={cn(
-                      "text-sm font-medium text-[#676767] dark:text-gray-400 mb-1",
-                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                    )}>{t('courses.startDate')}</p>
-                    <p className={cn(
-                      "text-lg font-semibold text-[#1f1d39] dark:text-white",
-                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                    )}>{new Date(course.Start_Date).toLocaleDateString('vi-VN')}</p>
-                  </div>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>

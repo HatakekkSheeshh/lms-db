@@ -54,8 +54,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
-import { adminService, type AdminCourse, type CourseEnrollmentByCourse, type CourseDistributionByCredit, type TopCourseByEnrollment, type CourseAverageGrade, type CourseEnrollmentTrendOverTime, type CourseStatusDistribution, type CourseActivityStatistics, type Room, type Building, type RoomEquipment, type RoomSection, type ScheduleEntry, type ScheduleByRoomEntry } from '@/lib/api/adminService'
-import { BookOpen, Edit2, Trash2, Eye, ArrowUpDown, MoreHorizontal, ChevronDown, Loader2, BarChart3, Plus, MapPin, Grid, List, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Wrench } from 'lucide-react'
+import { adminService, type AdminCourse, type CourseEnrollmentByCourse, type CourseDistributionByCredit, type TopCourseByEnrollment, type CourseAverageGrade, type CourseEnrollmentTrendOverTime, type CourseStatusDistribution, type CourseActivityStatistics, type Room, type Building, type RoomEquipment, type RoomSection, type ScheduleEntry, type ScheduleByRoomEntry, type ScheduleByUserEntry } from '@/lib/api/adminService'
+import { BookOpen, Edit2, Trash2, Eye, ArrowUpDown, MoreHorizontal, ChevronDown, Loader2, BarChart3, Plus, MapPin, Grid, List, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Wrench, GraduationCap, UserCheck, ChevronUp, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { 
   useNeoBrutalismMode, 
@@ -117,7 +117,6 @@ export default function CourseManagementPage() {
     Course_ID: '',
     Name: '',
     Credit: '',
-    Start_Date: '',
   })
 
   // Room Management state
@@ -154,14 +153,22 @@ export default function CourseManagementPage() {
   // Schedule Management state
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([])
   const [schedulesByRoom, setSchedulesByRoom] = useState<ScheduleByRoomEntry[]>([])
+  const [userSchedules, setUserSchedules] = useState<Map<number, ScheduleByUserEntry[]>>(new Map())
   const [loadingSchedules, setLoadingSchedules] = useState(false)
   const [loadingSchedulesByRoom, setLoadingSchedulesByRoom] = useState(false)
+  const [loadingUserSchedules, setLoadingUserSchedules] = useState<Set<number>>(new Set())
   const [selectedCourseFilter, setSelectedCourseFilter] = useState<string | null>(null)
   const [selectedSemesterFilter, setSelectedSemesterFilter] = useState<string | null>(null)
   const [selectedScheduleBuildingFilter, setSelectedScheduleBuildingFilter] = useState<string | null>(null)
   const [selectedRoomFilter, setSelectedRoomFilter] = useState<string | null>(null)
+  const [expandedScheduleBuildings, setExpandedScheduleBuildings] = useState<Set<string>>(new Set())
+  const [selectedUserType, setSelectedUserType] = useState<'student' | 'tutor'>('student')
+  const [expandedUserIds, setExpandedUserIds] = useState<Set<number>>(new Set())
+  const [users, setUsers] = useState<Array<{ University_ID: number; First_Name: string; Last_Name: string; Email: string; Phone_Number?: string; role: string }>>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [userSearchQuery, setUserSearchQuery] = useState('')
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([])
-  const [scheduleViewMode, setScheduleViewMode] = useState<'calendar' | 'byRoom'>('calendar')
+  const [scheduleViewMode, setScheduleViewMode] = useState<'calendar' | 'byRoom' | 'byUser'>('calendar')
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState<ScheduleEntry | null>(null)
   const [scheduleFormData, setScheduleFormData] = useState({
@@ -235,13 +242,69 @@ export default function CourseManagementPage() {
       const timeoutId = setTimeout(() => {
         if (scheduleViewMode === 'calendar') {
           loadSchedules()
-        } else {
+        } else if (scheduleViewMode === 'byRoom') {
           loadSchedulesByRoom()
+        } else if (scheduleViewMode === 'byUser') {
+          // Load schedules for all expanded users
+          expandedUserIds.forEach(userId => {
+            loadSchedulesByUser(userId)
+          })
         }
       }, 300)
       return () => clearTimeout(timeoutId)
     }
-  }, [activeTab, selectedCourseFilter, selectedSemesterFilter, scheduleViewMode, selectedScheduleBuildingFilter, selectedRoomFilter])
+  }, [activeTab, selectedCourseFilter, selectedSemesterFilter, scheduleViewMode, selectedScheduleBuildingFilter, selectedRoomFilter, selectedUserType, selectedSemesterFilter, expandedUserIds])
+
+  useEffect(() => {
+    if (activeTab === 'schedule' && scheduleViewMode === 'byUser') {
+      loadUsers(selectedUserType)
+    }
+  }, [activeTab, scheduleViewMode, selectedUserType])
+
+  // Load schedules when users are expanded
+  useEffect(() => {
+    if (activeTab === 'schedule' && scheduleViewMode === 'byUser') {
+      expandedUserIds.forEach(userId => {
+        // Only load if not already loaded
+        if (!userSchedules.has(userId) && !loadingUserSchedules.has(userId)) {
+          loadSchedulesByUser(userId)
+        }
+      })
+    }
+  }, [expandedUserIds, activeTab, scheduleViewMode, selectedSemesterFilter, selectedUserType])
+
+  // Filter users based on search query
+  const filteredUsers = useMemo(() => {
+    if (!userSearchQuery.trim()) return users
+    const query = userSearchQuery.toLowerCase().trim()
+    const normalizeVietnamese = (str: string) => {
+      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    }
+    return users.filter(user => {
+      const fullName = `${user.Last_Name} ${user.First_Name}`
+      return (
+        user.University_ID.toString().includes(query) ||
+        normalizeVietnamese(fullName).includes(normalizeVietnamese(query)) ||
+        normalizeVietnamese(user.Email).includes(normalizeVietnamese(query)) ||
+        (user.Phone_Number && normalizeVietnamese(user.Phone_Number).includes(normalizeVietnamese(query)))
+      )
+    })
+  }, [users, userSearchQuery])
+
+  // Group schedules by building and room
+  const schedulesByBuilding = useMemo(() => {
+    return schedulesByRoom.reduce((acc, schedule) => {
+      if (!acc[schedule.Building_Name]) {
+        acc[schedule.Building_Name] = {}
+      }
+      const roomKey = schedule.Room_Name
+      if (!acc[schedule.Building_Name][roomKey]) {
+        acc[schedule.Building_Name][roomKey] = []
+      }
+      acc[schedule.Building_Name][roomKey].push(schedule)
+      return acc
+    }, {} as Record<string, Record<string, ScheduleByRoomEntry[]>>)
+  }, [schedulesByRoom])
 
   useEffect(() => {
     if (activeTab === 'rooms') {
@@ -323,6 +386,50 @@ export default function CourseManagementPage() {
       console.error('[CourseManagement] ❌ API getAllSchedulesByRoom failed:', error)
     } finally {
       setLoadingSchedulesByRoom(false)
+    }
+  }
+
+  const loadUsers = async (userType: 'student' | 'tutor') => {
+    try {
+      setLoadingUsers(true)
+      let data
+      if (userType === 'student') {
+        data = await adminService.getStudents()
+      } else {
+        data = await adminService.getTutors()
+      }
+      setUsers(data.map((user: any) => ({
+        University_ID: user.University_ID,
+        First_Name: user.First_Name,
+        Last_Name: user.Last_Name,
+        Email: user.Email || '',
+        Phone_Number: user.Phone_Number || undefined,
+        role: userType,
+      })))
+    } catch (error) {
+      console.error('[CourseManagement] ❌ API getUsers failed:', error)
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  const loadSchedulesByUser = async (userId: number) => {
+    try {
+      setLoadingUserSchedules(prev => new Set(prev).add(userId))
+      const data = await adminService.getAllSchedulesByUser({
+        university_id: userId,
+        user_type: selectedUserType,
+        semester: selectedSemesterFilter || undefined,
+      })
+      setUserSchedules(prev => new Map(prev).set(userId, data))
+    } catch (error) {
+      console.error('[CourseManagement] ❌ API getAllSchedulesByUser failed:', error)
+    } finally {
+      setLoadingUserSchedules(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(userId)
+        return newSet
+      })
     }
   }
 
@@ -806,6 +913,19 @@ export default function CourseManagementPage() {
     })
   }
 
+  // Toggle schedule building expansion
+  const toggleScheduleBuilding = (buildingName: string) => {
+    setExpandedScheduleBuildings(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(buildingName)) {
+        newSet.delete(buildingName)
+      } else {
+        newSet.add(buildingName)
+      }
+      return newSet
+    })
+  }
+
   // Get unique floors from rooms
   const getUniqueFloors = (rooms: Room[]): string[] => {
     const floors = new Set<string>()
@@ -992,7 +1112,6 @@ export default function CourseManagementPage() {
       Course_ID: '',
       Name: '',
       Credit: '',
-      Start_Date: '',
     })
     setIsDialogOpen(true)
   }
@@ -1003,7 +1122,6 @@ export default function CourseManagementPage() {
       Course_ID: course.Course_ID,
       Name: course.Name,
       Credit: course.Credit?.toString() || '',
-      Start_Date: course.Start_Date || '',
     })
     setIsDialogOpen(true)
   }
@@ -1062,14 +1180,12 @@ export default function CourseManagementPage() {
         await adminService.updateCourse(formData.Course_ID, {
           Name: formData.Name,
           Credit: formData.Credit ? parseInt(formData.Credit) : null,
-          Start_Date: formData.Start_Date || null,
         })
       } else {
         await adminService.createCourse({
           Course_ID: formData.Course_ID,
           Name: formData.Name,
           Credit: formData.Credit ? parseInt(formData.Credit) : null,
-          Start_Date: formData.Start_Date || null,
         })
       }
 
@@ -1089,7 +1205,6 @@ export default function CourseManagementPage() {
           Course_ID: formData.Course_ID,
           Name: formData.Name,
           Credit: formData.Credit ? parseInt(formData.Credit) : null,
-          Start_Date: formData.Start_Date || null,
           SectionCount: editingCourse.SectionCount,
           StudentCount: editingCourse.StudentCount,
           TutorCount: editingCourse.TutorCount,
@@ -2193,24 +2308,6 @@ export default function CourseManagementPage() {
                     value={formData.Credit}
                     onChange={(e) => setFormData({ ...formData, Credit: e.target.value })}
                     placeholder="3"
-                    className={cn(
-                      "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
-                      getNeoBrutalismInputClasses(neoBrutalismMode)
-                    )}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="start-date" className={cn(
-                    "text-[#211c37] dark:text-white",
-                    getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                  )}>
-                    {t('admin.startDate')}
-                  </Label>
-                  <Input
-                    id="start-date"
-                    type="date"
-                    value={formData.Start_Date}
-                    onChange={(e) => setFormData({ ...formData, Start_Date: e.target.value })}
                     className={cn(
                       "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
                       getNeoBrutalismInputClasses(neoBrutalismMode)
@@ -3681,6 +3778,17 @@ export default function CourseManagementPage() {
               >
                 {t('admin.byRoomView')}
               </Button>
+              <Button
+                variant={scheduleViewMode === 'byUser' ? 'default' : 'outline'}
+                onClick={() => setScheduleViewMode('byUser')}
+                className={cn(
+                  neoBrutalismMode 
+                    ? getNeoBrutalismButtonClasses(neoBrutalismMode, scheduleViewMode === 'byUser' ? 'primary' : 'outline')
+                    : ""
+                )}
+              >
+                {t('admin.byUserView')}
+              </Button>
             </div>
 
             {/* Schedule Filters */}
@@ -3688,40 +3796,46 @@ export default function CourseManagementPage() {
               <CardContent className="pt-6">
                 <div className={cn(
                   "grid gap-4",
-                  scheduleViewMode === 'calendar' ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-4"
+                  scheduleViewMode === 'calendar' ? "grid-cols-1 md:grid-cols-2" : 
+                  scheduleViewMode === 'byRoom' ? "grid-cols-1 md:grid-cols-4" : 
+                  "grid-cols-1 md:grid-cols-3"
                 )}>
-                  <div className="space-y-2">
-                    <Label className={cn(
-                      "text-[#211c37] dark:text-white",
-                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                    )}>
-                      {t('admin.course')}
-                    </Label>
-                    <Select
-                      value={selectedCourseFilter || 'all'}
-                      onValueChange={(value) => setSelectedCourseFilter(value === 'all' ? null : value)}
-                    >
-                      <SelectTrigger className={cn(
-                        "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
-                        getNeoBrutalismInputClasses(neoBrutalismMode)
-                      )}>
-                        <SelectValue placeholder={t('admin.allCourses')} />
-                      </SelectTrigger>
-                      <SelectContent className={cn(
-                        "bg-white dark:bg-[#1a1a1a]",
-                        neoBrutalismMode 
-                          ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
-                          : ""
-                      )}>
-                        <SelectItem value="all">{t('admin.allCourses')}</SelectItem>
-                        {courses.map((course) => (
-                          <SelectItem key={course.Course_ID} value={course.Course_ID}>
-                            {course.Course_ID} - {course.Name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {scheduleViewMode !== 'byUser' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label className={cn(
+                          "text-[#211c37] dark:text-white",
+                          getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                        )}>
+                          {t('admin.course')}
+                        </Label>
+                        <Select
+                          value={selectedCourseFilter || 'all'}
+                          onValueChange={(value) => setSelectedCourseFilter(value === 'all' ? null : value)}
+                        >
+                          <SelectTrigger className={cn(
+                            "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
+                            getNeoBrutalismInputClasses(neoBrutalismMode)
+                          )}>
+                            <SelectValue placeholder={t('admin.allCourses')} />
+                          </SelectTrigger>
+                          <SelectContent className={cn(
+                            "bg-white dark:bg-[#1a1a1a]",
+                            neoBrutalismMode 
+                              ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                              : ""
+                          )}>
+                            <SelectItem value="all">{t('admin.allCourses')}</SelectItem>
+                            {courses.map((course) => (
+                              <SelectItem key={course.Course_ID} value={course.Course_ID}>
+                                {course.Course_ID} - {course.Name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
                   <div className="space-y-2">
                     <Label className={cn(
                       "text-[#211c37] dark:text-white",
@@ -3828,13 +3942,45 @@ export default function CourseManagementPage() {
                       </div>
                     </>
                   )}
+                  {scheduleViewMode === 'byUser' && (
+                    <div className="space-y-2">
+                      <Label className={cn(
+                        "text-[#211c37] dark:text-white",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                      )}>
+                        {t('admin.userType')}
+                      </Label>
+                      <Select
+                        value={selectedUserType}
+                        onValueChange={(value: 'student' | 'tutor') => {
+                          setSelectedUserType(value)
+                          setExpandedUserIds(new Set()) // Reset expanded users when type changes
+                        }}
+                      >
+                        <SelectTrigger className={cn(
+                          "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
+                          getNeoBrutalismInputClasses(neoBrutalismMode)
+                        )}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className={cn(
+                          "bg-white dark:bg-[#1a1a1a]",
+                          neoBrutalismMode 
+                            ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                            : ""
+                        )}>
+                          <SelectItem value="student">{t('admin.student')}</SelectItem>
+                          <SelectItem value="tutor">{t('admin.tutor')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Schedule View Content */}
             {scheduleViewMode === 'calendar' ? (
-              /* Calendar View */
               <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
               <CardHeader>
                 <CardTitle className={cn(
@@ -4114,8 +4260,7 @@ export default function CourseManagementPage() {
                 )}
               </CardContent>
             </Card>
-            ) : (
-              /* By Room View */
+            ) : scheduleViewMode === 'byRoom' ? (
               <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
                 <CardHeader>
                   <CardTitle className={cn(
@@ -4135,29 +4280,54 @@ export default function CourseManagementPage() {
                       {t('admin.noSchedulesFound') || 'No schedules found'}
                     </div>
                   ) : (
-                    <div className="space-y-6">
-                      {Object.entries(
-                        schedulesByRoom.reduce((acc, schedule) => {
-                          const key = `${schedule.Building_Name}-${schedule.Room_Name}`
-                          if (!acc[key]) {
-                            acc[key] = []
-                          }
-                          acc[key].push(schedule)
-                          return acc
-                        }, {} as Record<string, ScheduleByRoomEntry[]>)
-                      ).map(([roomKey, roomSchedules]) => {
-                        const [buildingName, roomName] = roomKey.split('-')
-                        return (
-                          <Card key={roomKey} className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
-                            <CardHeader>
-                              <CardTitle className={cn(
-                                "text-lg text-[#1f1d39] dark:text-white",
-                                getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
-                              )}>
-                                {buildingName} - {roomName}
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
+                    <div className="space-y-4">
+                      {Object.entries(schedulesByBuilding).map(([buildingName, rooms]) => {
+                          const isExpanded = expandedScheduleBuildings.has(buildingName)
+                          const roomCount = Object.keys(rooms).length
+                          
+                          return (
+                            <div key={buildingName} className="space-y-2">
+                              {/* Building Header - Clickable to expand/collapse */}
+                              <div 
+                                className={cn(
+                                  "flex items-center gap-2 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] rounded-md cursor-pointer hover:bg-[#e5e5e5] dark:hover:bg-[#333] transition-colors",
+                                  neoBrutalismMode 
+                                    ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                    : ""
+                                )}
+                                onClick={() => toggleScheduleBuilding(buildingName)}
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-5 w-5 text-[#3bafa8]" />
+                                ) : (
+                                  <ChevronRight className="h-5 w-5 text-[#3bafa8]" />
+                                )}
+                                <MapPin className="h-5 w-5 text-[#3bafa8]" />
+                                <span className={cn(
+                                  "font-bold text-lg text-[#211c37] dark:text-white flex-1",
+                                  getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                )}>
+                                  {buildingName}
+                                </span>
+                                <Badge variant="secondary" className="ml-2">
+                                  {roomCount} {t('admin.rooms')}
+                                </Badge>
+                              </div>
+                              
+                              {/* Expanded Content - Rooms */}
+                              {isExpanded && (
+                                <div className="space-y-4 pl-6">
+                                  {Object.entries(rooms).map(([roomName, roomSchedules]) => (
+                                    <Card key={`${buildingName}-${roomName}`} className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                                      <CardHeader>
+                                        <CardTitle className={cn(
+                                          "text-lg text-[#1f1d39] dark:text-white",
+                                          getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                        )}>
+                                          {buildingName} - {roomName}
+                                        </CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
                               <div className="overflow-x-auto">
                                 <div className="min-w-[900px]">
                                   {/* Calendar Header */}
@@ -4377,10 +4547,495 @@ export default function CourseManagementPage() {
                                   </div>
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
-                        )
-                      })}
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+                <CardHeader>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <CardTitle className={cn(
+                        "text-xl text-[#1f1d39] dark:text-white",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                      )}>
+                        {selectedUserType === 'student' ? t('admin.student') : t('admin.tutor')} {t('admin.list')}
+                      </CardTitle>
+                      <CardDescription className={cn(
+                        "text-[#85878d] dark:text-gray-400",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
+                        {userSearchQuery.trim() 
+                          ? `${t('admin.totalUsers')} ${filteredUsers.length} / ${users.length} ${t('admin.users')}`
+                          : `${t('admin.totalUsers')} ${users.length} ${t('admin.users')}`
+                        }
+                      </CardDescription>
+                    </div>
+                  </div>
+                  {/* Search Input */}
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder={t('admin.searchPlaceholder')}
+                        value={userSearchQuery}
+                        onChange={(e) => setUserSearchQuery(e.target.value)}
+                        className={cn(
+                          "pl-10 bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
+                          getNeoBrutalismInputClasses(neoBrutalismMode)
+                        )}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {loadingUsers ? (
+                    <div className="flex items-center justify-center h-32">
+                      <Loader2 className="h-5 w-5 animate-spin text-[#3bafa8]" />
+                    </div>
+                  ) : users.length === 0 ? (
+                    <div className={cn(
+                      "text-center py-8 text-gray-500 dark:text-gray-400 text-sm",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                    )}>
+                      {t('admin.noUsersFound') || 'No users found'}
+                    </div>
+                  ) : filteredUsers.length === 0 ? (
+                    <div className={cn(
+                      "text-center py-8 text-gray-500 dark:text-gray-400 text-sm",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                    )}>
+                      {t('admin.noUsersFound') || 'No users found'}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className={cn(
+                              "w-[50px]",
+                              getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                            )}>
+                            </TableHead>
+                            <TableHead className={cn(
+                              "w-[100px]",
+                              getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                            )}>
+                              {t('admin.id')}
+                            </TableHead>
+                            <TableHead className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>
+                              {t('admin.fullName')}
+                            </TableHead>
+                            <TableHead className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>
+                              {t('admin.role')}
+                            </TableHead>
+                            <TableHead className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>
+                              {t('admin.phone')}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredUsers.map((user) => {
+                            const isExpanded = expandedUserIds.has(user.University_ID)
+                            const userSchedule = userSchedules.get(user.University_ID) || []
+                            const isLoadingSchedule = loadingUserSchedules.has(user.University_ID)
+                            
+                            const getRoleIcon = () => {
+                              if (selectedUserType === 'student') {
+                                return <GraduationCap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                              } else {
+                                return <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              }
+                            }
+                            
+                            const getRoleBadgeColor = () => {
+                              if (selectedUserType === 'student') {
+                                return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                              } else {
+                                return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              }
+                            }
+                            
+                            const toggleExpand = (e: React.MouseEvent) => {
+                              e.stopPropagation()
+                              setExpandedUserIds(prev => {
+                                const newSet = new Set(prev)
+                                if (newSet.has(user.University_ID)) {
+                                  newSet.delete(user.University_ID)
+                                } else {
+                                  newSet.add(user.University_ID)
+                                }
+                                return newSet
+                              })
+                            }
+                            
+                            return (
+                              <>
+                                <TableRow
+                                  key={user.University_ID}
+                                  className={cn(
+                                    "hover:bg-gray-50 dark:hover:bg-[#2a2a2a]",
+                                    isExpanded && "bg-[#3bafa8]/5 dark:bg-[#3bafa8]/10"
+                                  )}
+                                >
+                                  <TableCell>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={toggleExpand}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      {isExpanded ? (
+                                        <ChevronUp className="h-4 w-4" />
+                                      ) : (
+                                        <ChevronDown className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </TableCell>
+                                  <TableCell className="font-medium">{user.University_ID}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-3">
+                                      <div className={cn(
+                                        "w-8 h-8 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0",
+                                        neoBrutalismMode 
+                                          ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                          : "rounded-full"
+                                      )}>
+                                        {getRoleIcon()}
+                                      </div>
+                                      <div>
+                                        <div className={cn(
+                                          "font-medium",
+                                          getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                        )}>
+                                          {user.Last_Name} {user.First_Name}
+                                        </div>
+                                        <div className={cn(
+                                          "text-sm text-gray-500 dark:text-gray-400",
+                                          getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                        )}>
+                                          {user.Email}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge className={cn(
+                                      getRoleBadgeColor(),
+                                      neoBrutalismMode ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : ""
+                                    )}>
+                                      {selectedUserType === 'student' ? t('admin.student') : t('admin.tutor')}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className={cn(
+                                      "text-sm",
+                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                    )}>
+                                      {user.Phone_Number || t('admin.noData')}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                                {isExpanded && (
+                                  <TableRow key={`${user.University_ID}-schedule`}>
+                                    <TableCell colSpan={5} className="p-0">
+                                      <div className="p-4 bg-gray-50 dark:bg-[#1a1a1a]">
+                                        {isLoadingSchedule ? (
+                                          <div className="flex items-center justify-center h-64">
+                                            <Loader2 className="h-6 w-6 animate-spin text-[#3bafa8]" />
+                                          </div>
+                                        ) : userSchedule.length === 0 ? (
+                                          <div className={cn(
+                                            "text-center py-12 text-gray-500 dark:text-gray-400",
+                                            getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                                          )}>
+                                            {t('admin.noSchedulesFound')}
+                                          </div>
+                                        ) : (
+                                          <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                              <h4 className={cn(
+                                                "text-lg font-semibold",
+                                                getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+                                              )}>
+                                                {user.Last_Name} {user.First_Name} - {t('admin.schedule')}
+                                              </h4>
+                                              <div className="w-48">
+                                                <Select
+                                                  value={selectedSemesterFilter || 'all'}
+                                                  onValueChange={(value) => setSelectedSemesterFilter(value === 'all' ? null : value)}
+                                                >
+                                                  <SelectTrigger className={cn(
+                                                    "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
+                                                    getNeoBrutalismInputClasses(neoBrutalismMode)
+                                                  )}>
+                                                    <SelectValue placeholder={t('admin.allSemesters')} />
+                                                  </SelectTrigger>
+                                                  <SelectContent className={cn(
+                                                    "bg-white dark:bg-[#1a1a1a]",
+                                                    neoBrutalismMode 
+                                                      ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                      : ""
+                                                  )}>
+                                                    <SelectItem value="all">{t('admin.allSemesters')}</SelectItem>
+                                                    {availableSemesters.map((semester) => (
+                                                      <SelectItem key={semester} value={semester}>
+                                                        {semester}
+                                                      </SelectItem>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                              <div className="min-w-[900px]">
+                                                {/* Calendar Header */}
+                                                <div className="grid grid-cols-7 gap-px mb-px bg-gray-200 dark:bg-gray-700">
+                                                  <div className={cn(
+                                                    "p-3 text-center font-semibold text-sm bg-white dark:bg-[#1a1a1a]",
+                                                    getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                                  )}>
+                                                    {t('admin.time')}
+                                                  </div>
+                                                  {[
+                                                    { value: 1, key: 'monday' },
+                                                    { value: 2, key: 'tuesday' },
+                                                    { value: 3, key: 'wednesday' },
+                                                    { value: 4, key: 'thursday' },
+                                                    { value: 5, key: 'friday' },
+                                                    { value: 6, key: 'saturday' }
+                                                  ].map((day) => (
+                                                    <div key={day.value} className={cn(
+                                                      "p-3 text-center font-semibold text-sm text-[#211c37] dark:text-white bg-white dark:bg-[#1a1a1a]",
+                                                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                                    )}>
+                                                      {t(`admin.${day.key}`)}
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                                
+                                                {/* Calendar Body */}
+                                                <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700">
+                                                  {/* Time column */}
+                                                  <div className="bg-white dark:bg-[#1a1a1a]">
+                                                    {Array.from({ length: 13 }, (_, i) => i + 1).map((period) => (
+                                                      <div
+                                                        key={period}
+                                                        className={cn(
+                                                          "p-2 text-xs border-b border-gray-200 dark:border-gray-700 min-h-[80px] flex flex-col items-center justify-start",
+                                                          neoBrutalismMode 
+                                                            ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB]"
+                                                            : ""
+                                                        )}
+                                                        style={{ height: '80px' }}
+                                                      >
+                                                        <div className="font-semibold">Period {period}</div>
+                                                        <div className="text-[10px] mt-0.5">{getPeriodTime(period)}</div>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                  
+                                                  {/* Day columns */}
+                                                  {[1, 2, 3, 4, 5, 6].map((dayOfWeek) => {
+                                                    const daySchedules = userSchedule.filter(s => s.Day_of_Week === dayOfWeek)
+                                                    const schedulesByPeriod: { [key: number]: ScheduleByUserEntry[] } = {}
+                                                    daySchedules.forEach(s => {
+                                                      if (!schedulesByPeriod[s.Start_Period]) {
+                                                        schedulesByPeriod[s.Start_Period] = []
+                                                      }
+                                                      schedulesByPeriod[s.Start_Period].push(s)
+                                                    })
+
+                                                    return (
+                                                      <div key={dayOfWeek} className="bg-white dark:bg-[#1a1a1a] relative">
+                                                        {Array.from({ length: 13 }, (_, i) => i + 1).map((period) => {
+                                                          const hasSchedule = daySchedules.some(
+                                                            s => s.Start_Period <= period && s.End_Period >= period
+                                                          )
+                                                          
+                                                          if (!schedulesByPeriod[period]) {
+                                                            return (
+                                                              <div
+                                                                key={`cell-${user.University_ID}-${dayOfWeek}-${period}`}
+                                                                className={cn(
+                                                                  "p-2 text-xs border-b border-gray-200 dark:border-gray-700 min-h-[80px] flex items-center justify-center",
+                                                                  neoBrutalismMode 
+                                                                    ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB]"
+                                                                    : ""
+                                                                )}
+                                                                style={{ height: '80px' }}
+                                                              >
+                                                                {!hasSchedule && (
+                                                                  <div className="text-gray-300 dark:text-gray-600 text-lg">+</div>
+                                                                )}
+                                                              </div>
+                                                            )
+                                                          }
+                                                          return null
+                                                        })}
+                                                        
+                                                        {/* Schedule cards */}
+                                                        {Object.entries(schedulesByPeriod).map(([periodStr, periodSchedules]) => {
+                                                          const period = parseInt(periodStr)
+                                                          const showCount = 1
+                                                          const remainingCount = periodSchedules.length - showCount
+                                                          
+                                                          return (
+                                                            <>
+                                                              {periodSchedules.slice(0, showCount).map((scheduleEntry, index) => {
+                                                                const duration = scheduleEntry.End_Period - scheduleEntry.Start_Period + 1
+                                                                const height = duration * 80
+                                                                
+                                                                const courseIdHash = scheduleEntry.Course_ID.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+                                                                const hue = (courseIdHash * 137.508) % 360
+                                                                const color = `hsl(${hue}, 70%, 50%)`
+                                                                
+                                                                return (
+                                                                  <div
+                                                                    key={`schedule-${user.University_ID}-${dayOfWeek}-${scheduleEntry.Start_Period}-${scheduleEntry.Course_ID}-${scheduleEntry.Section_ID}`}
+                                                                    className={cn(
+                                                                      "absolute left-0 right-0 mx-0.5 p-2 text-xs rounded cursor-pointer hover:opacity-90 transition-all text-white flex flex-col justify-start overflow-hidden",
+                                                                      neoBrutalismMode 
+                                                                        ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                                        : "shadow-md"
+                                                                    )}
+                                                                    style={{ 
+                                                                      top: `${(scheduleEntry.Start_Period - 1) * 80 + 1}px`,
+                                                                      height: `${height - 2}px`,
+                                                                      backgroundColor: color,
+                                                                      zIndex: 10 + index
+                                                                    }}
+                                                                  >
+                                                                    <div className="font-bold text-sm mb-0.5 truncate">{scheduleEntry.Course_ID}</div>
+                                                                    <div className="text-xs opacity-95 mb-0.5 truncate">{scheduleEntry.Section_ID}</div>
+                                                                    {scheduleEntry.Course_Name && (
+                                                                      <div className="text-[10px] opacity-90 line-clamp-2 leading-tight">
+                                                                        {scheduleEntry.Course_Name}
+                                                                      </div>
+                                                                    )}
+                                                                    {scheduleEntry.RoomsInfo && (
+                                                                      <div className="text-[10px] opacity-80 mt-1">
+                                                                        📍 {scheduleEntry.RoomsInfo}
+                                                                      </div>
+                                                                    )}
+                                                                    <div className="text-[10px] opacity-75 mt-auto pt-1">
+                                                                      {getScheduleTimeRange(scheduleEntry.Start_Period, scheduleEntry.End_Period)}
+                                                                    </div>
+                                                                  </div>
+                                                                )
+                                                              })}
+                                                              
+                                                              {remainingCount > 0 && (
+                                                                <Popover>
+                                                                  <PopoverTrigger asChild>
+                                                                    <div
+                                                                      className={cn(
+                                                                        "absolute right-0 mx-0.5 p-2 text-xs rounded cursor-pointer hover:opacity-90 transition-all text-white flex items-center justify-center",
+                                                                        neoBrutalismMode 
+                                                                          ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                                          : "shadow-md bg-gray-600 hover:bg-gray-700"
+                                                                      )}
+                                                                      style={{ 
+                                                                        top: `${(period - 1) * 80 + 1}px`,
+                                                                        height: `80px`,
+                                                                        zIndex: 15
+                                                                      }}
+                                                                      onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                      }}
+                                                                    >
+                                                                      <span className="font-semibold">+{remainingCount}</span>
+                                                                    </div>
+                                                                  </PopoverTrigger>
+                                                                  <PopoverContent 
+                                                                    className={cn(
+                                                                      "w-80 p-0",
+                                                                      neoBrutalismMode 
+                                                                        ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                                        : ""
+                                                                    )}
+                                                                    align="end"
+                                                                  >
+                                                                    <div className="p-3">
+                                                                      <div className="flex items-center justify-between mb-2">
+                                                                        <h4 className={cn(
+                                                                          "font-semibold text-sm",
+                                                                          getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                                                                        )}>
+                                                                          {t('admin.otherSections')} ({remainingCount})
+                                                                        </h4>
+                                                                      </div>
+                                                                      <ScrollArea className="h-[300px] pr-4">
+                                                                        <div className="space-y-2">
+                                                                          {periodSchedules.slice(showCount).map((scheduleEntry) => {
+                                                                            const courseIdHash = scheduleEntry.Course_ID.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+                                                                            const hue = (courseIdHash * 137.508) % 360
+                                                                            const color = `hsl(${hue}, 70%, 50%)`
+                                                                            
+                                                                            return (
+                                                                              <div 
+                                                                                key={`list-${user.University_ID}-${scheduleEntry.Course_ID}-${scheduleEntry.Section_ID}`}
+                                                                                className={cn(
+                                                                                  "p-3 rounded-md border cursor-pointer hover:opacity-90 transition-all text-white",
+                                                                                  neoBrutalismMode 
+                                                                                    ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                                                                                    : "shadow-sm"
+                                                                                )}
+                                                                                style={{ backgroundColor: color }}
+                                                                              >
+                                                                                <div className="font-bold text-sm mb-1">{scheduleEntry.Course_ID}</div>
+                                                                                <div className="text-xs opacity-95 mb-1">{scheduleEntry.Section_ID}</div>
+                                                                                {scheduleEntry.Course_Name && (
+                                                                                  <div className="text-xs opacity-90 mb-1">
+                                                                                    {scheduleEntry.Course_Name}
+                                                                                  </div>
+                                                                                )}
+                                                                                {scheduleEntry.RoomsInfo && (
+                                                                                  <div className="text-[10px] opacity-80 mb-1">
+                                                                                    📍 {scheduleEntry.RoomsInfo}
+                                                                                  </div>
+                                                                                )}
+                                                                                <div className="text-[10px] opacity-75">
+                                                                                  {getScheduleTimeRange(scheduleEntry.Start_Period, scheduleEntry.End_Period)}
+                                                                                </div>
+                                                                              </div>
+                                                                            )
+                                                                          })}
+                                                                        </div>
+                                                                      </ScrollArea>
+                                                                    </div>
+                                                                  </PopoverContent>
+                                                                </Popover>
+                                                              )}
+                                                            </>
+                                                          )
+                                                        })}
+                                                      </div>
+                                                    )
+                                                  })}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
                     </div>
                   )}
                 </CardContent>

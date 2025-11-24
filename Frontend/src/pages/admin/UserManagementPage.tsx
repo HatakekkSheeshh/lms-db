@@ -153,7 +153,7 @@ export default function UserManagementPage() {
     Department_Name: '',
     Type: 'Program Administrator',
   })
-  
+
   const [validationErrors, setValidationErrors] = useState<{
     Phone_Number?: string
     National_ID?: string
@@ -3410,7 +3410,7 @@ export default function UserManagementPage() {
             </DialogHeader>
 
             <form onSubmit={handleSaveUser}>
-              <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="university-id" className={cn(
                   "text-[#211c37] dark:text-white",
@@ -3799,33 +3799,33 @@ export default function UserManagementPage() {
                   )}
                 </>
               )}
-              </div>
+            </div>
 
-              <DialogFooter>
-                <Button
+            <DialogFooter>
+              <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  className={cn(
-                    "border-[#e5e7e7] dark:border-[#333]",
-                    neoBrutalismMode 
-                      ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline')
-                      : ""
-                  )}
-                >
-                  <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('admin.cancel')}</span>
-                </Button>
-                <Button
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+                className={cn(
+                  "border-[#e5e7e7] dark:border-[#333]",
+                  neoBrutalismMode 
+                    ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline')
+                    : ""
+                )}
+              >
+                <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('admin.cancel')}</span>
+              </Button>
+              <Button
                   type="submit"
-                  className={cn(
-                    neoBrutalismMode 
-                      ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'primary', "bg-[#3bafa8] hover:bg-[#2a8d87] text-white")
-                      : "bg-[#3bafa8] hover:bg-[#2a8d87] text-white"
-                  )}
-                >
-                  <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{editingUser ? t('admin.update') : t('admin.addNew')}</span>
-                </Button>
-              </DialogFooter>
+                className={cn(
+                  neoBrutalismMode 
+                    ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'primary', "bg-[#3bafa8] hover:bg-[#2a8d87] text-white")
+                    : "bg-[#3bafa8] hover:bg-[#2a8d87] text-white"
+                )}
+              >
+                <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{editingUser ? t('admin.update') : t('admin.addNew')}</span>
+              </Button>
+            </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
