@@ -179,10 +179,11 @@ BEGIN
         -- Quiz completion rates
         WITH QuizStats AS (
             SELECT 
-                COUNT(*) AS TotalQuizzes,
-                SUM(CASE WHEN completion_status IN ('Submitted', 'Passed', 'Failed') THEN 1 ELSE 0 END) AS CompletedQuizzes,
-                SUM(CASE WHEN completion_status = 'Passed' THEN 1 ELSE 0 END) AS PassedQuizzes
-            FROM [Quiz]
+                COUNT(DISTINCT qq.QuizID) AS TotalQuizzes,
+                COUNT(DISTINCT CASE WHEN qa.completion_status IN ('Submitted', 'Passed', 'Failed') THEN qa.QuizID END) AS CompletedQuizzes,
+                COUNT(DISTINCT CASE WHEN qa.completion_status = 'Passed' THEN qa.QuizID END) AS PassedQuizzes
+            FROM [Quiz_Questions] qq
+            LEFT JOIN [Quiz_Answer] qa ON qq.QuizID = qa.QuizID
         ),
         AssignmentStats AS (
             SELECT 

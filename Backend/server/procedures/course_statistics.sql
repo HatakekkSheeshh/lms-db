@@ -296,7 +296,7 @@ BEGIN
             COUNT(DISTINCT s.Section_ID) AS SectionCount,
             COUNT(DISTINCT a.University_ID) AS StudentCount,
             COUNT(DISTINCT ass.Assessment_ID) AS TotalAssignments,
-            COUNT(DISTINCT q.Assessment_ID) AS TotalQuizzes,
+            COUNT(DISTINCT qq.QuizID) AS TotalQuizzes,
             COUNT(DISTINCT sub.Submission_No) AS TotalSubmissions,
             COUNT(DISTINCT CASE WHEN sub.status = 'Submitted' THEN sub.Submission_No END) AS SubmittedCount,
             AVG(CASE WHEN a.Final_Grade IS NOT NULL THEN a.Final_Grade END) AS AverageGrade
@@ -310,11 +310,9 @@ BEGIN
             AND a.Course_ID = ass.Course_ID 
             AND a.Semester = ass.Semester 
             AND a.Assessment_ID = ass.Assessment_ID
-        LEFT JOIN [Quiz] q ON a.University_ID = q.University_ID 
-            AND a.Section_ID = q.Section_ID 
-            AND a.Course_ID = q.Course_ID 
-            AND a.Semester = q.Semester 
-            AND a.Assessment_ID = q.Assessment_ID
+        LEFT JOIN [Quiz_Questions] qq ON s.Section_ID = qq.Section_ID 
+            AND s.Course_ID = qq.Course_ID 
+            AND s.Semester = qq.Semester
         LEFT JOIN [Submission] sub ON ass.University_ID = sub.University_ID 
             AND ass.Section_ID = sub.Section_ID 
             AND ass.Course_ID = sub.Course_ID 

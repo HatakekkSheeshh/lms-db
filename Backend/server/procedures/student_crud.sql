@@ -199,8 +199,8 @@ BEGIN
         DELETE FROM [Assignment] 
         WHERE University_ID = @University_ID;
         
-        -- Delete Quizzes (references Assessment)
-        DELETE FROM [Quiz] 
+        -- Delete Quiz_Answer (student quiz answers, references Assessment)
+        DELETE FROM [Quiz_Answer] 
         WHERE University_ID = @University_ID;
         
         -- Delete Feedbacks (references Assessment)

@@ -33,8 +33,8 @@ GO
 :r assignment_crud.sql
 GO
 
--- Quiz CRUD
-:r quiz_crud.sql
+-- Quiz CRUD (Updated for Quiz_Questions and Quiz_Answer)
+:r quiz_crud_new.sql
 GO
 
 -- Assessment Queries

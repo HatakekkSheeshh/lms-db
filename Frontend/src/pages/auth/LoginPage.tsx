@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getGlassmorphismCardClasses, getGlassmorphismButtonClasses, getGlassmorphismInputClasses } from '@/lib/utils/theme-utils'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher'
@@ -21,6 +22,7 @@ export default function LoginPage() {
   const { t } = useTranslation()
   const [universityId, setUniversityId] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
@@ -244,22 +246,43 @@ export default function LoginPage() {
               )}>
                 {t('auth.password')}
               </label>
+              <div className="relative">
               <Input
                 id="password"
-                type="password"
+                  type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={cn(
-                  "w-full h-14 transition-all",
+                    "w-full h-14 transition-all pr-12",
                   neoBrutalismMode
                     ? "neo-brutalism-input border-4 border-[#1a1a1a] dark:border-[#FFFBEB] bg-white dark:bg-[#1a1a1a] text-[#1a1a1a] dark:text-[#FFFBEB] rounded-none font-semibold focus:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:focus:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
                     : glassmorphismMode
-                    ? getGlassmorphismInputClasses(glassmorphismMode, "w-full h-14")
+                      ? getGlassmorphismInputClasses(glassmorphismMode, "w-full h-14 pr-12")
                     : "border-[#e5e7e7] dark:border-[#333] bg-white dark:bg-[#1a1a1a] text-[#211c37] dark:text-white rounded-xl focus:ring-2 focus:ring-[#3bafa8]"
                 )}
                 placeholder={t('auth.passwordPlaceholder')}
                 required
               />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={cn(
+                    "absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-md transition-all",
+                    neoBrutalismMode
+                      ? "text-[#1a1a1a] dark:text-[#FFFBEB] hover:bg-gray-100 dark:hover:bg-[#333] border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                      : glassmorphismMode
+                      ? "text-white/90 hover:bg-white/20 backdrop-blur-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  )}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
             
             <div className="flex items-center space-x-2">

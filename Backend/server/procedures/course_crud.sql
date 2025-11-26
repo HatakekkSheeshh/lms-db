@@ -171,20 +171,24 @@ BEGIN
                 AND [Assignment].Assessment_ID = ass.Assessment_ID
         );
         
-        -- 3. Delete Quiz (references Assessment)
-        DELETE FROM [Quiz]
+        -- 3. Delete Quiz_Answer (student answers, references Assessment via QuizID)
+        DELETE FROM [Quiz_Answer]
         WHERE EXISTS (
             SELECT 1
             FROM [Assessment] ass
+            INNER JOIN [Quiz_Questions] qq ON ass.Section_ID = qq.Section_ID 
+                AND ass.Course_ID = qq.Course_ID 
+                AND ass.Semester = qq.Semester
             WHERE ass.Course_ID = @Course_ID
-                AND [Quiz].University_ID = ass.University_ID
-                AND [Quiz].Section_ID = ass.Section_ID
-                AND [Quiz].Course_ID = ass.Course_ID
-                AND [Quiz].Semester = ass.Semester
-                AND [Quiz].Assessment_ID = ass.Assessment_ID
+                AND [Quiz_Answer].QuizID = qq.QuizID
+                AND [Quiz_Answer].Assessment_ID = ass.Assessment_ID
         );
         
-        -- 4. Delete Feedback (references Assessment)
+        -- 4. Delete Quiz_Questions (quiz definitions for this course)
+        DELETE FROM [Quiz_Questions]
+        WHERE Course_ID = @Course_ID;
+        
+        -- 5. Delete Feedback (references Assessment)
         DELETE FROM [Feedback]
         WHERE EXISTS (
             SELECT 1

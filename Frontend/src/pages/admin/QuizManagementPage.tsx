@@ -1583,36 +1583,36 @@ export default function QuizManagementPage() {
                 
                 {/* Basic Info Tab */}
                 <TabsContent value="basic" className="mt-0">
-                  <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4 py-4">
                     {/* When editing, show read-only fields */}
-                    <div className="space-y-2">
+              <div className="space-y-2">
                       <Label htmlFor="course-id" className={cn(
-                        "text-[#211c37] dark:text-white",
-                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                      )}>
+                  "text-[#211c37] dark:text-white",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                )}>
                         {t('admin.courseId')} *
-                      </Label>
-                      <Input
+                </Label>
+                <Input
                         id="course-id"
                         value={formData.Course_ID}
                         readOnly
                         disabled
-                        className={cn(
+                  className={cn(
                           "bg-gray-100 dark:bg-[#2a2a2a] text-[#211c37] dark:text-white cursor-not-allowed",
-                          getNeoBrutalismInputClasses(neoBrutalismMode)
-                        )}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="section-id" className={cn(
-                        "text-[#211c37] dark:text-white",
-                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                      )}>
-                        {t('admin.sectionId')} *
-                      </Label>
-                      <Input
-                        id="section-id"
-                        value={formData.Section_ID}
+                    getNeoBrutalismInputClasses(neoBrutalismMode)
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="section-id" className={cn(
+                  "text-[#211c37] dark:text-white",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                )}>
+                  {t('admin.sectionId')} *
+                </Label>
+                <Input
+                  id="section-id"
+                  value={formData.Section_ID}
                         readOnly
                         disabled
                         className={cn(
@@ -1653,20 +1653,20 @@ export default function QuizManagementPage() {
                         value={formData.pass_score}
                         onChange={(e) => setFormData({ ...formData, pass_score: e.target.value })}
                         placeholder="5"
-                        className={cn(
-                          "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
-                          getNeoBrutalismInputClasses(neoBrutalismMode)
-                        )}
-                      />
-                    </div>
-                    <div className="space-y-2">
+                  className={cn(
+                    "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
+                    getNeoBrutalismInputClasses(neoBrutalismMode)
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
                       <Label htmlFor="time-limit" className={cn(
-                        "text-[#211c37] dark:text-white",
-                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                      )}>
+                  "text-[#211c37] dark:text-white",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                )}>
                         {t('admin.timeLimit')} * <span className="text-xs text-gray-500 dark:text-gray-400">(minutes)</span>
-                      </Label>
-                      <Input
+                </Label>
+                <Input
                         id="time-limit"
                         type="number"
                         min="1"
@@ -1674,20 +1674,20 @@ export default function QuizManagementPage() {
                         value={formData.Time_limits}
                         onChange={(e) => setFormData({ ...formData, Time_limits: e.target.value })}
                         placeholder="30"
-                        className={cn(
-                          "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
-                          getNeoBrutalismInputClasses(neoBrutalismMode)
-                        )}
-                      />
+                  className={cn(
+                    "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
+                    getNeoBrutalismInputClasses(neoBrutalismMode)
+                  )}
+                />
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Enter the time limit in minutes (e.g., 30 for 30 minutes, 60 for 1 hour)
                       </p>
-                    </div>
-                    <div className="space-y-2">
+              </div>
+              <div className="space-y-2">
                       <Label htmlFor="grading-method" className={cn(
-                        "text-[#211c37] dark:text-white",
-                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                      )}>
+                  "text-[#211c37] dark:text-white",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                )}>
                         {t('admin.gradingMethod')}
                       </Label>
                       <Select 
@@ -1757,34 +1757,34 @@ export default function QuizManagementPage() {
                         getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
                       )}>
                         {t('admin.type')}
-                      </Label>
-                      <Input
+                </Label>
+                <Input
                         id="type"
                         value={formData.types}
                         onChange={(e) => setFormData({ ...formData, types: e.target.value })}
                         placeholder="Multiple Choice"
-                        className={cn(
-                          "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
-                          getNeoBrutalismInputClasses(neoBrutalismMode)
-                        )}
-                      />
-                    </div>
-                    <div className="space-y-2">
+                  className={cn(
+                    "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
+                    getNeoBrutalismInputClasses(neoBrutalismMode)
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
                       <Label htmlFor="weight" className={cn(
-                        "text-[#211c37] dark:text-white",
-                        getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                      )}>
+                  "text-[#211c37] dark:text-white",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                )}>
                         {t('admin.weight')}
-                      </Label>
-                      <Input
+                </Label>
+                <Input
                         id="weight"
-                        type="number"
+                  type="number"
                         step="0.1"
                         value={formData.Weight}
                         onChange={(e) => setFormData({ ...formData, Weight: e.target.value })}
                         placeholder="0.3"
-                        className={cn(
-                          "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
+                  className={cn(
+                    "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
                           getNeoBrutalismInputClasses(neoBrutalismMode)
                         )}
                       />
@@ -2231,10 +2231,10 @@ export default function QuizManagementPage() {
                       placeholder="Auto-filled from section"
                       className={cn(
                         "bg-gray-100 dark:bg-[#2a2a2a] text-[#211c37] dark:text-white cursor-not-allowed",
-                        getNeoBrutalismInputClasses(neoBrutalismMode)
-                      )}
-                    />
-                  </div>
+                    getNeoBrutalismInputClasses(neoBrutalismMode)
+                  )}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="pass-score" className={cn(
                   "text-[#211c37] dark:text-white",
@@ -2454,7 +2454,7 @@ export default function QuizManagementPage() {
                   <Plus className="h-4 w-4 mr-2" />
                   <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('admin.addQuestion')}</span>
                 </Button>
-              </div>
+            </div>
 
               <ScrollArea className={cn(
                 "h-[400px] rounded-md border p-4",

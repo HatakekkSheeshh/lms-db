@@ -84,8 +84,8 @@ BEGIN
          INNER JOIN [Section] s ON a.Section_ID = s.Section_ID AND a.Course_ID = s.Course_ID AND a.Semester = s.Semester
          WHERE s.Course_ID = c.Course_ID) as TotalAssignments,
         (SELECT COUNT(*) 
-         FROM [Quiz] q 
-         INNER JOIN [Section] s ON q.Section_ID = s.Section_ID AND q.Course_ID = s.Course_ID AND q.Semester = s.Semester
+         FROM [Quiz_Questions] qq 
+         INNER JOIN [Section] s ON qq.Section_ID = s.Section_ID AND qq.Course_ID = s.Course_ID AND qq.Semester = s.Semester
          WHERE s.Course_ID = c.Course_ID) as TotalQuizzes,
         (SELECT AVG(a.Final_Grade) 
          FROM [Assessment] a 
@@ -271,8 +271,8 @@ BEGIN
          WHERE s.Course_ID = @Course_ID) as TotalAssignments,
         
         (SELECT COUNT(*) 
-         FROM [Quiz] q 
-         INNER JOIN [Section] s ON q.Section_ID = s.Section_ID AND q.Course_ID = s.Course_ID AND q.Semester = s.Semester
+         FROM [Quiz_Questions] qq 
+         INNER JOIN [Section] s ON qq.Section_ID = s.Section_ID AND qq.Course_ID = s.Course_ID AND qq.Semester = s.Semester
          WHERE s.Course_ID = @Course_ID) as TotalQuizzes,
         
         (SELECT COUNT(*) 

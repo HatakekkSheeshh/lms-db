@@ -19,7 +19,7 @@ BEGIN
         (SELECT COUNT(*) FROM [Course]) as total_courses,
         (SELECT COUNT(*) FROM [Section]) as total_sections,
         (SELECT COUNT(*) FROM [Assignment]) as total_assignments,
-        (SELECT COUNT(*) FROM [Quiz]) as total_quizzes,
+        (SELECT COUNT(*) FROM [Quiz_Questions]) as total_quizzes,
         (SELECT COUNT(*) FROM [Submission]) as total_submissions,
         (SELECT COUNT(*) FROM [Assessment] WHERE Status = 'Pending') as pending_assessments;
 END
