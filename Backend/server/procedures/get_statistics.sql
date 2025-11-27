@@ -21,6 +21,7 @@ BEGIN
         (SELECT COUNT(*) FROM [Assignment_Definition]) as total_assignments,
         (SELECT COUNT(*) FROM [Quiz_Questions]) as total_quizzes,
         (SELECT COUNT(*) FROM [Assignment_Submission]) as total_submissions,
+        (SELECT COUNT(DISTINCT AssignmentID) FROM [Assignment_Submission]) as completed_assignments,
         (SELECT COUNT(*) FROM [Assessment] WHERE Status = 'Pending') as pending_assessments;
 END
 GO

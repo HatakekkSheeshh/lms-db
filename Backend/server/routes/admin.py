@@ -1917,6 +1917,7 @@ def get_statistics():
                 'total_assignments': 0,
                 'total_quizzes': 0,
                 'total_submissions': 0,
+                'completed_assignments': 0,
                 'pending_assessments': 0,
             }
         else:
@@ -1930,7 +1931,8 @@ def get_statistics():
                 'total_assignments': int(result[6]) if result[6] is not None else 0,
                 'total_quizzes': int(result[7]) if result[7] is not None else 0,
                 'total_submissions': int(result[8]) if result[8] is not None else 0,
-                'pending_assessments': int(result[9]) if result[9] is not None else 0,
+                'completed_assignments': int(result[9]) if result[9] is not None else 0,
+                'pending_assessments': int(result[10]) if result[10] is not None else 0,
             }
 
         if conn:

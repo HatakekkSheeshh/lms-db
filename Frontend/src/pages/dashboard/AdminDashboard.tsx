@@ -91,8 +91,8 @@ export default function AdminDashboard() {
   const totalTutors = statistics ? statistics.total_tutors : 0
   const totalAdmins = statistics ? statistics.total_admins : 0
   const completionRate = statistics 
-    ? Math.round((statistics.total_submissions / Math.max(statistics.total_assignments, 1)) * 100)
-    : 85
+    ? Math.round((statistics.completed_assignments / Math.max(statistics.total_assignments, 1)) * 100)
+    : 0
   const systemStatus = t('dashboard.active')
 
   // Mock course cards data

@@ -11,6 +11,7 @@ export interface Statistics {
   total_assignments: number
   total_quizzes: number
   total_submissions: number
+  completed_assignments: number
   pending_assessments: number
 }
 
