@@ -2,7 +2,7 @@
 Azure Blob Storage utility for uploading files
 """
 import os
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, ContentSettings
 from dotenv import load_dotenv
 import uuid
 from datetime import datetime
@@ -66,9 +66,19 @@ class AzureBlobStorage:
                 blob=blob_name
             )
             
-            # Upload file
+            # Upload file with content type and content disposition headers
+            # This ensures PDF opens in browser instead of downloading
+            content_settings = ContentSettings(
+                content_type='application/pdf',
+                content_disposition='inline'  # Opens in browser instead of downloading
+            )
+            
             file.seek(0)  # Reset file pointer
-            blob_client.upload_blob(file, overwrite=True)
+            blob_client.upload_blob(
+                file, 
+                overwrite=True,
+                content_settings=content_settings
+            )
             
             # Construct and return the URL
             # Format: https://{storage_account}.blob.core.windows.net/{container}/{blob_name}
@@ -90,6 +100,34 @@ class AzureBlobStorage:
             print(f'Error uploading file to Azure Blob Storage: {e}')
             import traceback
             traceback.print_exc()
+            raise
+    
+    def update_file_content_disposition(self, blob_name: str):
+        """
+        Update content disposition of an existing blob to 'inline' so it opens in browser
+        
+        Args:
+            blob_name: Full blob path (e.g., "CO3001/filename.pdf")
+        """
+        try:
+            blob_client = self.blob_service_client.get_blob_client(
+                container=self.container_name,
+                blob=blob_name
+            )
+            
+            # Get current blob properties
+            properties = blob_client.get_blob_properties()
+            
+            # Update content settings to inline
+            content_settings = ContentSettings(
+                content_type=properties.content_settings.content_type or 'application/pdf',
+                content_disposition='inline'
+            )
+            
+            blob_client.set_http_headers(content_settings=content_settings)
+            print(f'Updated content disposition to inline for: {blob_name}')
+        except Exception as e:
+            print(f'Error updating file content disposition: {e}')
             raise
     
     def delete_file(self, blob_name: str):
