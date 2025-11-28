@@ -193,7 +193,16 @@
     "sectionDetails": "Section Details",
     "sectionId": "Section ID",
     "courseNotFound": "Course not found",
-    "sectionNotFound": "Section not found"
+    "sectionNotFound": "Section not found",
+    "deadline": "Deadline",
+    "assignmentGrades": "Assignment Grades",
+    "noAssignmentGrades": "No assignment grades available",
+    "overallGrades": "Overall Grades",
+    "quizGrade": "Quiz Grade",
+    "assignmentGrade": "Assignment Grade",
+    "midtermGrade": "Midterm Grade",
+    "finalGrade": "Final Grade",
+    "studentsInSection": "Students in this Section"
   },
   "assignments": {
     "title": "Assignments",

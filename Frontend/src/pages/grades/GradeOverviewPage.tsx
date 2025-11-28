@@ -77,15 +77,16 @@ export default function GradeOverviewPage() {
   }
 
   const averageGrade = grades.length > 0
-    ? (grades.reduce((sum, g) => sum + g.Grade, 0) / grades.length).toFixed(2)
+    ? (grades.reduce((sum, g) => sum + (g.Grade || 0), 0) / grades.length).toFixed(2)
     : 'N/A'
 
-  const getCourseName = (courseId: number) => {
-    return courses.find(c => c.Course_ID === courseId)?.Name || `Course ${courseId}`
+  const getCourseName = (courseId: number | string) => {
+    const id = typeof courseId === 'string' ? parseInt(courseId) : courseId
+    return courses.find(c => c.Course_ID === id)?.Name || `Course ${courseId}`
   }
 
   const groupedGrades = grades.reduce((acc, grade) => {
-    const courseId = grade.Course_ID
+    const courseId = typeof grade.Course_ID === 'string' ? parseInt(grade.Course_ID) : grade.Course_ID
     if (!acc[courseId]) {
       acc[courseId] = []
     }
@@ -184,7 +185,7 @@ export default function GradeOverviewPage() {
 
         <div className="space-y-4">
           {Object.entries(groupedGrades).map(([courseId, courseGrades]) => {
-            const courseAvg = (courseGrades.reduce((sum, g) => sum + g.Grade, 0) / courseGrades.length).toFixed(2)
+            const courseAvg = (courseGrades.reduce((sum, g) => sum + (g.Grade || 0), 0) / courseGrades.length).toFixed(2)
             return (
               <Card 
                 key={courseId} 
@@ -244,7 +245,7 @@ export default function GradeOverviewPage() {
                         <div className={cn(
                           "text-lg font-bold text-[#3bafa8] dark:text-teal-400",
                           getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                        )}>{grade.Grade.toFixed(2)}</div>
+                        )}>{grade.Grade ? grade.Grade.toFixed(2) : 'N/A'}</div>
                       </div>
                     ))}
                   </div>

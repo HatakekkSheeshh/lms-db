@@ -53,22 +53,26 @@ export interface Assignment {
 }
 
 export interface Quiz {
-  University_ID: number
-  Section_ID: number
-  Course_ID: number
+  QuizID?: number
+  University_ID?: number
+  Section_ID: number | string
+  Course_ID: number | string
+  Semester?: string
   Assessment_ID: number
-  Grading_method: 'Highest Attemp' | 'Last Attemp'
-  pass_score: number
-  Time_limits: string
-  Start_Date: string
-  End_Date: string
+  Grading_method?: 'Highest Attemp' | 'Last Attemp' | string
+  pass_score?: number
+  Time_limits?: string
+  Start_Date?: string
+  End_Date?: string
   Responses?: string
-  completion_status: 'Not Taken' | 'In Progress' | 'Submitted' | 'Passed' | 'Failed'
-  score: number
+  completion_status?: 'Not Taken' | 'In Progress' | 'Submitted' | 'Passed' | 'Failed' | string
+  score?: number | null
   content: string
   types?: string
   Weight?: number
-  Correct_answer: string
+  Correct_answer?: string
+  Questions?: string
+  status_display?: string
 }
 
 export interface Submission {
@@ -85,13 +89,18 @@ export interface Submission {
 }
 
 export interface Assessment {
-  University_ID: number
-  Section_ID: number
-  Course_ID: number
+  University_ID?: number
+  Section_ID: number | string
+  Course_ID: number | string
+  Semester?: string
   Assessment_ID: number
-  Grade: number
-  Registration_Date: string
+  Grade?: number
+  Quiz_Grade?: number | null
+  Assignment_Grade?: number | null
+  Midterm_Grade?: number | null
+  Final_Grade?: number | null
+  Registration_Date?: string
   Potential_Withdrawal_Date?: string
-  Status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled'
+  Status?: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'Withdrawn' | string
 }
 

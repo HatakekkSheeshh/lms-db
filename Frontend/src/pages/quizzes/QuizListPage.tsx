@@ -64,8 +64,8 @@ export default function QuizListPage() {
         
         // Sort by end date (earliest deadline first)
         quizzesWithCourses.sort((a, b) => {
-          const endDateA = new Date(a.End_Date).getTime()
-          const endDateB = new Date(b.End_Date).getTime()
+          const endDateA = a.End_Date ? new Date(a.End_Date).getTime() : 0
+          const endDateB = b.End_Date ? new Date(b.End_Date).getTime() : 0
           return endDateA - endDateB
         })
         
@@ -81,6 +81,9 @@ export default function QuizListPage() {
   }, [user])
 
   const getStatusBadge = (quiz: Quiz) => {
+    if (!quiz.Start_Date || !quiz.End_Date) {
+      return { text: t('quizzes.notStarted'), variant: 'secondary' as const, icon: Clock }
+    }
     const now = new Date()
     const startDate = new Date(quiz.Start_Date)
     const endDate = new Date(quiz.End_Date)
@@ -126,12 +129,12 @@ export default function QuizListPage() {
           const StatusIcon = status.icon
           const canTake = quiz.completion_status === 'Not Taken' || quiz.completion_status === 'In Progress'
           const now = new Date()
-          const startDate = new Date(quiz.Start_Date)
-          const endDate = new Date(quiz.End_Date)
-          const isAvailable = now >= startDate && now <= endDate
-          const diff = endDate.getTime() - now.getTime()
-          const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24))
-          const hoursLeft = Math.ceil(diff / (1000 * 60 * 60))
+          const startDate = quiz.Start_Date ? new Date(quiz.Start_Date) : null
+          const endDate = quiz.End_Date ? new Date(quiz.End_Date) : null
+          const isAvailable = startDate && endDate && now >= startDate && now <= endDate
+          const diff = endDate ? endDate.getTime() - now.getTime() : 0
+          const daysLeft = endDate ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0
+          const hoursLeft = endDate ? Math.ceil(diff / (1000 * 60 * 60)) : 0
 
           return (
             <Card 
@@ -205,9 +208,9 @@ export default function QuizListPage() {
                         "text-orange-800 dark:text-orange-200 font-medium",
                         getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
                       )}>
-                        {format(endDate, 'EEEE, MMMM dd, yyyy HH:mm')}
+                        {endDate ? format(endDate, 'EEEE, MMMM dd, yyyy HH:mm') : 'N/A'}
                       </span>
-                      {now < endDate && now >= startDate && (
+                      {endDate && startDate && now < endDate && now >= startDate && (
                         <Badge variant="outline" className={cn(
                           "border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300",
                           neoBrutalismMode && "border-4 rounded-none shadow-[4px_4px_0px_0px_rgba(234,88,12,1)] dark:shadow-[4px_4px_0px_0px_rgba(251,146,60,1)]"
@@ -221,25 +224,29 @@ export default function QuizListPage() {
                           </span>
                         </Badge>
                       )}
-                      {now > endDate && (
+                      {endDate && now > endDate && (
                         <Badge variant="destructive" className={cn(
                           neoBrutalismMode && "border-4 border-red-600 dark:border-red-400 rounded-none shadow-[4px_4px_0px_0px_rgba(220,38,38,1)] dark:shadow-[4px_4px_0px_0px_rgba(248,113,113,1)]"
                         )}>
                           <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('quizzes.closed')}</span>
                         </Badge>
                       )}
-                      {now < startDate && (
+                      {startDate && now < startDate && (
                         <Badge variant="secondary" className={cn(
                           "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
                           neoBrutalismMode && "border-4 border-blue-600 dark:border-blue-400 rounded-none shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] dark:shadow-[4px_4px_0px_0px_rgba(96,165,250,1)]"
                         )}>
-                          <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('quizzes.starts')} {format(startDate, 'MMM dd, yyyy')}</span>
+                          <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>
+                            {t('quizzes.starts')} {format(startDate, 'MMM dd, yyyy')}
+                          </span>
                         </Badge>
                       )}
                     </div>
-                    <div className="text-orange-700 dark:text-orange-300 text-xs">
-                      {t('quizzes.available')}: {format(startDate, 'MMM dd, yyyy')} - {format(endDate, 'MMM dd, yyyy')}
-                    </div>
+                    {startDate && endDate && (
+                      <div className="text-orange-700 dark:text-orange-300 text-xs">
+                        {t('quizzes.available')}: {format(startDate, 'MMM dd, yyyy')} - {format(endDate, 'MMM dd, yyyy')}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -256,9 +263,9 @@ export default function QuizListPage() {
                       {t('courses.weight')}: {(quiz.Weight * 100).toFixed(0)}%
                     </div>
                   )}
-                  {quiz.score > 0 && (
+                  {quiz.score !== null && quiz.score !== undefined && quiz.score > 0 && (
                     <div className="text-sm font-semibold text-[#1f1d39] dark:text-white">
-                      {t('quizzes.yourScore')}: {quiz.score.toFixed(2)}/{quiz.pass_score}
+                      {t('quizzes.yourScore')}: {quiz.score.toFixed(2)}/{quiz.pass_score || 0}
                     </div>
                   )}
                 </div>

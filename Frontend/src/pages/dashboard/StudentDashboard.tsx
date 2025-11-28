@@ -290,9 +290,9 @@ export default function StudentDashboard() {
           getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
         )}>{t('dashboard.leaderBoard')}</h3>
         {leaderboard.length > 0 ? (
-          <div className="space-y-3">
+        <div className="space-y-3">
             {leaderboard.map((item) => (
-              <div
+            <div
                 key={item.rank}
                 className={cn(
                   "flex items-center gap-2 p-2 transition-all",
@@ -309,14 +309,14 @@ export default function StudentDashboard() {
                     : "bg-[#f5f7fb] dark:bg-[#2a2a2a] rounded"
                 )}>
                   {item.rank}
-                </div>
-                <div className="flex-1 min-w-0">
+              </div>
+              <div className="flex-1 min-w-0">
                   <p className={cn(
                     "text-sm font-semibold text-black dark:text-white truncate",
                     getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
                   )}>
                     {item.last_name} {item.first_name}
-                  </p>
+                </p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className={cn(
                       "text-xs text-[#676767] dark:text-gray-400",
@@ -338,9 +338,9 @@ export default function StudentDashboard() {
                 ) : (
                   <TrendingDown className="w-4 h-4 text-red-500 flex-shrink-0" />
                 )}
-              </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
         ) : (
           <div className={cn(
             "text-center py-4 text-[#676767] dark:text-gray-400 text-sm",
@@ -369,35 +369,35 @@ export default function StudentDashboard() {
                 getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
               )}>{t('dashboard.gradeComponents')}</h3>
               {gradeChartData.length > 0 ? (
-                <ChartContainer config={chartConfig} className="h-[305px] w-full">
+              <ChartContainer config={chartConfig} className="h-[305px] w-full">
                   <BarChart data={gradeChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-[#e5e7e7] dark:stroke-[#333]" />
-                    <XAxis
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-[#e5e7e7] dark:stroke-[#333]" />
+                  <XAxis
                       dataKey="course"
-                      tickLine={false}
-                      tickMargin={10}
-                      axisLine={false}
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
                       angle={-45}
                       textAnchor="end"
                       height={80}
                       tick={{ fill: '#95969c', fontSize: 11, fontWeight: 600 }}
-                      className="dark:[&>text]:fill-gray-400"
-                    />
-                    <YAxis
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fill: '#85878d', fontSize: 12 }}
-                      className="dark:[&>text]:fill-gray-400"
+                    className="dark:[&>text]:fill-gray-400"
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: '#85878d', fontSize: 12 }}
+                    className="dark:[&>text]:fill-gray-400"
                       domain={[0, 10]}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <ChartLegend content={<ChartLegendContent />} />
+                  />
+                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                  <ChartLegend content={<ChartLegendContent />} />
                     <Bar dataKey="Final Grade" fill="#45a8a3" />
                     <Bar dataKey="Midterm" fill="#ff9053" />
                     <Bar dataKey="Quiz" fill="#db81aa" />
                     <Bar dataKey="Assignment" fill="#8b5cf6" />
-                  </BarChart>
-                </ChartContainer>
+                </BarChart>
+              </ChartContainer>
               ) : (
                 <div className={cn(
                   "flex items-center justify-center h-[305px] text-[#676767] dark:text-gray-400",
@@ -469,13 +469,13 @@ export default function StudentDashboard() {
                 
                 {/* Course Count */}
                 <div className="w-full text-center">
-                  <span className={cn(
-                    "text-sm text-[#83868e] dark:text-gray-400 font-medium",
-                    getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                    <span className={cn(
+                      "text-sm text-[#83868e] dark:text-gray-400 font-medium",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
                   )}>{t('dashboard.courses')}: </span>
-                  <span className={cn(
-                    "text-sm font-semibold text-black dark:text-white",
-                    getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                    <span className={cn(
+                      "text-sm font-semibold text-black dark:text-white",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
                   )}>{statistics?.total_courses || 0}</span>
                 </div>
               </div>
@@ -491,13 +491,13 @@ export default function StudentDashboard() {
                   )}>{gpa}</span>
                 </p>
                 {statistics?.leaderboard_rank && statistics.leaderboard_rank > 0 && (
-                  <div className={cn(
-                    "flex items-center justify-center gap-1.5 text-[#3bafa8] text-xs font-medium",
-                    getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                  )}>
-                    <Trophy className="w-3 h-3" />
+                <div className={cn(
+                  "flex items-center justify-center gap-1.5 text-[#3bafa8] text-xs font-medium",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                )}>
+                  <Trophy className="w-3 h-3" />
                     <span>{statistics.leaderboard_rank}{statistics.leaderboard_rank === 1 ? 'st' : statistics.leaderboard_rank === 2 ? 'nd' : statistics.leaderboard_rank === 3 ? 'rd' : 'th'} {t('dashboard.inLeaderboard')}</span>
-                  </div>
+                </div>
                 )}
               </div>
           </Card>
@@ -505,21 +505,28 @@ export default function StudentDashboard() {
 
         {/* Course Cards - Grid Layout 2 rows x 4 columns (fixed 8 cards) */}
         <div className="mb-6">
-          {courses.length > 0 ? (
-            <>
-              <div className="grid grid-cols-4 gap-5 mb-4">
+          {/* Course List Container with Border */}
+          <div className={cn(
+            "p-6 rounded-lg",
+            neoBrutalismMode
+              ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] bg-white dark:bg-[#2a2a2a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+              : "border border-[#e5e7e9] dark:border-[#333] bg-white dark:bg-[#2a2a2a]"
+          )}>
+            {courses.length > 0 ? (
+              <>
+                <div className="grid grid-cols-4 gap-5 mb-4">
                 {displayCourses.map((course, index) => {
                   if (!course) {
                     // Empty card placeholder
                     return (
-                      <Card
+        <Card 
                         key={`empty-${index}`}
-                        className={cn(
-                          neoBrutalismMode 
+            className={cn(
+              neoBrutalismMode
                             ? getNeoBrutalismCourseCardClasses(neoBrutalismMode, "h-[177px] relative overflow-hidden opacity-0 pointer-events-none")
                             : "bg-transparent dark:bg-transparent border-0 h-[177px] relative overflow-hidden pointer-events-none"
-                        )}
-                      >
+            )}
+          >
                         <div className="p-4 h-full"></div>
                       </Card>
                     )
@@ -530,7 +537,7 @@ export default function StudentDashboard() {
                     <Card
                       key={course.Course_ID}
                       className={cn(
-                        neoBrutalismMode 
+              neoBrutalismMode 
                           ? getNeoBrutalismCourseCardClasses(neoBrutalismMode, "h-[177px] relative overflow-hidden")
                           : `${cardConfig.color} dark:bg-[#2a2a2a] border-0 dark:border-[#333] h-[177px] relative overflow-hidden cursor-pointer hover:shadow-lg dark:hover:shadow-xl transition-shadow`,
                         !neoBrutalismMode && cardConfig.color
@@ -540,7 +547,7 @@ export default function StudentDashboard() {
                       <div className="p-4 h-full flex flex-col justify-between">
                         {/* Course ID in top right corner */}
                         <div className="flex justify-between items-start">
-                          <div className={cn(
+                    <div className={cn(
                             cardConfig.iconBg,
                             "dark:bg-[#1a1a1a] w-12 h-12 rounded-lg flex items-center justify-center text-2xl font-bold",
                             cardConfig.iconColor,
@@ -569,7 +576,7 @@ export default function StudentDashboard() {
                     </Card>
                   )
                 })}
-              </div>
+                    </div>
               
               {/* Pagination Controls */}
               {totalPages > 1 && (
@@ -618,15 +625,16 @@ export default function StudentDashboard() {
                   </button>
                 </div>
               )}
-            </>
-          ) : (
-            <div className={cn(
-              "text-center py-8 text-[#676767] dark:text-gray-400",
-              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-            )}>
-              {t('dashboard.noCourses')}
-            </div>
-          )}
+              </>
+            ) : (
+              <div className={cn(
+                "text-center py-8 text-[#676767] dark:text-gray-400",
+                getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+              )}>
+                {t('dashboard.noCourses')}
+              </div>
+            )}
+          </div>
         </div>
 
       </div>

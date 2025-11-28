@@ -192,7 +192,16 @@
     "sectionDetails": "Chi tiết lớp học",
     "sectionId": "Mã lớp học",
     "courseNotFound": "Không tìm thấy khóa học",
-    "sectionNotFound": "Không tìm thấy lớp học"
+    "sectionNotFound": "Không tìm thấy lớp học",
+    "deadline": "Hạn nộp",
+    "assignmentGrades": "Điểm bài tập",
+    "noAssignmentGrades": "Không có điểm bài tập",
+    "overallGrades": "Điểm tổng thể",
+    "quizGrade": "Điểm kiểm tra",
+    "assignmentGrade": "Điểm bài tập",
+    "midtermGrade": "Điểm giữa kỳ",
+    "finalGrade": "Điểm cuối kỳ",
+    "studentsInSection": "Sinh viên trong lớp học này"
   },
   "assignments": {
     "title": "Bài tập",

@@ -256,3 +256,422 @@ def get_student_courses():
     except Exception as e:
         print(f'Get student courses error: {e}')
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@students_bp.route('/courses/with-sections', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_courses_with_sections():
+    """Get courses with sections that the student is enrolled in"""
+    try:
+        university_id = request.args.get('university_id', type=int)
+        if not university_id:
+            return jsonify({'success': False, 'error': 'university_id is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentCoursesWithSections %s', (university_id,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        # Group by course
+        courses_dict = {}
+        for row in results:
+            course_id = row[0]
+            if course_id not in courses_dict:
+                courses_dict[course_id] = {
+                    'Course_ID': row[0],
+                    'Name': row[1],
+                    'Credit': int(row[2]) if row[2] else None,
+                    'CCategory': row[3],
+                    'Sections': []
+                }
+            courses_dict[course_id]['Sections'].append({
+                'Section_ID': row[4],
+                'Semester': row[5]
+            })
+        
+        courses = list(courses_dict.values())
+        return jsonify(courses)
+    except Exception as e:
+        print(f'Get student courses with sections error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@students_bp.route('/section/<string:section_id>/<string:course_id>/detail', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_section_detail(section_id, course_id):
+    """Get section detail for a student"""
+    try:
+        university_id = request.args.get('university_id', type=int)
+        if not university_id:
+            return jsonify({'success': False, 'error': 'university_id is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentSectionDetail %s, %s, %s', (university_id, section_id, course_id))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if not result:
+            return jsonify({'success': False, 'error': 'Section not found or student not enrolled'}), 404
+        
+        return jsonify({
+            'Section_ID': result[0],
+            'Course_ID': result[1],
+            'Semester': result[2],
+            'Course_Name': result[3],
+            'Credit': int(result[4]) if result[4] else None,
+            'CCategory': result[5]
+        })
+    except Exception as e:
+        print(f'Get student section detail error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== STUDENT COURSE DETAIL ====================
+
+@students_bp.route('/course/<string:course_id>/detail', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_course_detail(course_id):
+    """Get course detail information for a student"""
+    try:
+        university_id = request.args.get('university_id', type=int)
+        if not university_id:
+            return jsonify({'success': False, 'error': 'university_id is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentCourseDetail %s, %s', (university_id, course_id))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if not result:
+            return jsonify({'success': False, 'error': 'Course not found or student not enrolled'}), 404
+        
+        return jsonify({
+            'Course_ID': result[0],
+            'Name': result[1],
+            'Credit': int(result[2]) if result[2] else None,
+            'CCategory': result[3]
+        })
+    except Exception as e:
+        print(f'Get student course detail error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@students_bp.route('/course/<string:course_id>/sections', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_course_sections(course_id):
+    """Get sections of a course that the student is enrolled in"""
+    try:
+        university_id = request.args.get('university_id', type=int)
+        if not university_id:
+            return jsonify({'success': False, 'error': 'university_id is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentCourseSections %s, %s', (university_id, course_id))
+        results = cursor.fetchall()
+        conn.close()
+        
+        sections = []
+        for row in results:
+            sections.append({
+                'Section_ID': row[0],
+                'Course_ID': row[1],
+                'Semester': row[2]
+            })
+        
+        return jsonify(sections)
+    except Exception as e:
+        print(f'Get student course sections error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@students_bp.route('/course/<string:course_id>/quizzes', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_course_quizzes(course_id):
+    """Get quizzes for a course that the student can see"""
+    try:
+        university_id = request.args.get('university_id', type=int)
+        if not university_id:
+            return jsonify({'success': False, 'error': 'university_id is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentCourseQuizzes %s, %s', (university_id, course_id))
+        results = cursor.fetchall()
+        conn.close()
+        
+        quizzes = []
+        for row in results:
+            quizzes.append({
+                'QuizID': int(row[0]) if row[0] else None,
+                'Section_ID': row[1],
+                'Course_ID': row[2],
+                'Semester': row[3],
+                'Assessment_ID': row[4],
+                'Grading_method': row[5],
+                'pass_score': float(row[6]) if row[6] else None,
+                'Time_limits': str(row[7]) if row[7] else None,
+                'Start_Date': str(row[8]) if row[8] else None,
+                'End_Date': str(row[9]) if row[9] else None,
+                'content': row[10],
+                'types': row[11],
+                'Weight': float(row[12]) if row[12] else None,
+                'Correct_answer': row[13],
+                'Questions': row[14],
+                'Responses': row[15],
+                'completion_status': row[16] if row[16] else 'Not Taken',
+                'score': float(row[17]) if row[17] else None,
+                'status_display': row[18]
+            })
+        
+        return jsonify(quizzes)
+    except Exception as e:
+        print(f'Get student course quizzes error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@students_bp.route('/course/<string:course_id>/grades', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_course_grades(course_id):
+    """Get assessment grades for a student in a specific course"""
+    try:
+        university_id = request.args.get('university_id', type=int)
+        if not university_id:
+            return jsonify({'success': False, 'error': 'university_id is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentCourseGrades %s, %s', (university_id, course_id))
+        results = cursor.fetchall()
+        conn.close()
+        
+        grades = []
+        for row in results:
+            grades.append({
+                'Assessment_ID': row[0],
+                'Section_ID': row[1],
+                'Course_ID': row[2],
+                'Semester': row[3],
+                'Quiz_Grade': float(row[4]) if row[4] else None,
+                'Assignment_Grade': float(row[5]) if row[5] else None,
+                'Midterm_Grade': float(row[6]) if row[6] else None,
+                'Final_Grade': float(row[7]) if row[7] else None,
+                'Status': row[8]
+            })
+        
+        return jsonify(grades)
+    except Exception as e:
+        print(f'Get student course grades error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@students_bp.route('/course/<string:course_id>/students', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_course_students(course_id):
+    """Get list of students enrolled in the same course"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentCourseStudents %s', (course_id,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        students = []
+        for row in results:
+            students.append({
+                'University_ID': int(row[0]) if row[0] else None,
+                'First_Name': row[1],
+                'Last_Name': row[2],
+                'Email': row[3],
+                'Major': row[4],
+                'Current_degree': row[5]
+            })
+        
+        return jsonify(students)
+    except Exception as e:
+        print(f'Get student course students error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== STUDENT SECTION DETAIL ====================
+
+@students_bp.route('/section/<string:section_id>/<string:course_id>/<string:semester>/quizzes', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_section_quizzes(section_id, course_id, semester):
+    """Get quizzes for a specific section that the student can see"""
+    try:
+        university_id = request.args.get('university_id', type=int)
+        if not university_id:
+            return jsonify({'success': False, 'error': 'university_id is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentSectionQuizzes %s, %s, %s, %s', (university_id, section_id, course_id, semester))
+        results = cursor.fetchall()
+        conn.close()
+        
+        quizzes = []
+        for row in results:
+            quizzes.append({
+                'QuizID': int(row[0]) if row[0] else None,
+                'Section_ID': row[1],
+                'Course_ID': row[2],
+                'Semester': row[3],
+                'Assessment_ID': row[4],
+                'Grading_method': row[5],
+                'pass_score': float(row[6]) if row[6] else None,
+                'Time_limits': str(row[7]) if row[7] else None,
+                'Start_Date': str(row[8]) if row[8] else None,
+                'End_Date': str(row[9]) if row[9] else None,
+                'content': row[10],
+                'types': row[11],
+                'Weight': float(row[12]) if row[12] else None,
+                'Correct_answer': row[13],
+                'Questions': row[14],
+                'Responses': row[15],
+                'completion_status': row[16] if row[16] else 'Not Taken',
+                'score': float(row[17]) if row[17] else None,
+                'status_display': row[18]
+            })
+        
+        return jsonify(quizzes)
+    except Exception as e:
+        print(f'Get student section quizzes error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@students_bp.route('/section/<string:section_id>/<string:course_id>/<string:semester>/assignments', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_section_assignments(section_id, course_id, semester):
+    """Get assignments for a specific section that the student can see"""
+    try:
+        university_id = request.args.get('university_id', type=int)
+        if not university_id:
+            return jsonify({'success': False, 'error': 'university_id is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentSectionAssignments %s, %s, %s, %s', (university_id, section_id, course_id, semester))
+        results = cursor.fetchall()
+        conn.close()
+        
+        assignments = []
+        for row in results:
+            assignments.append({
+                'AssignmentID': int(row[0]) if row[0] else None,
+                'Course_ID': row[1],
+                'Semester': row[2],
+                'instructions': row[3],
+                'accepted_specification': row[4],
+                'submission_deadline': str(row[5]) if row[5] else None,
+                'Assessment_ID': row[6],
+                'score': float(row[7]) if row[7] else None,
+                'status': row[8],
+                'SubmitDate': str(row[9]) if row[9] else None,
+                'late_flag_indicator': bool(row[10]) if row[10] is not None else None,
+                'attached_files': row[11],
+                'Comments': row[12],
+                'status_display': row[13]
+            })
+        
+        return jsonify(assignments)
+    except Exception as e:
+        print(f'Get student section assignments error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@students_bp.route('/section/<string:section_id>/<string:course_id>/<string:semester>/grades', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_section_grades(section_id, course_id, semester):
+    """Get assessment grades for a student in a specific section"""
+    try:
+        university_id = request.args.get('university_id', type=int)
+        if not university_id:
+            return jsonify({'success': False, 'error': 'university_id is required'}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentSectionGrades %s, %s, %s, %s', (university_id, section_id, course_id, semester))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if not result:
+            return jsonify({
+                'Assessment_ID': None,
+                'Section_ID': section_id,
+                'Course_ID': course_id,
+                'Semester': semester,
+                'Quiz_Grade': None,
+                'Assignment_Grade': None,
+                'Midterm_Grade': None,
+                'Final_Grade': None,
+                'Status': None
+            })
+        
+        return jsonify({
+            'Assessment_ID': result[0],
+            'Section_ID': result[1],
+            'Course_ID': result[2],
+            'Semester': result[3],
+            'Quiz_Grade': float(result[4]) if result[4] else None,
+            'Assignment_Grade': float(result[5]) if result[5] else None,
+            'Midterm_Grade': float(result[6]) if result[6] else None,
+            'Final_Grade': float(result[7]) if result[7] else None,
+            'Status': result[8]
+        })
+    except Exception as e:
+        print(f'Get student section grades error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@students_bp.route('/section/<string:section_id>/<string:course_id>/<string:semester>/students', methods=['GET'])
+@require_auth
+@require_role(['student'])
+def get_student_section_students(section_id, course_id, semester):
+    """Get list of students enrolled in the same section"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('EXEC GetStudentSectionStudents %s, %s, %s', (section_id, course_id, semester))
+        results = cursor.fetchall()
+        conn.close()
+        
+        students = []
+        for row in results:
+            students.append({
+                'University_ID': int(row[0]) if row[0] else None,
+                'First_Name': row[1],
+                'Last_Name': row[2],
+                'Email': row[3],
+                'Major': row[4],
+                'Current_degree': row[5]
+            })
+        
+        return jsonify(students)
+    except Exception as e:
+        print(f'Get student section students error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500

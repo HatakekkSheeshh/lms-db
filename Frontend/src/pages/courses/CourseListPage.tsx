@@ -6,8 +6,8 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { courseService } from '@/lib/api/courseService'
-import type { Course } from '@/types'
+import { studentService, type CourseWithSections } from '@/lib/api/studentService'
+import { useAuth } from '@/context/AuthProvider'
 import { ROUTES } from '@/constants/routes'
 import { cn } from '@/lib/utils'
 import { 
@@ -30,17 +30,40 @@ import {
 
 export default function CourseListPage() {
   const { t } = useTranslation()
-  const [courses, setCourses] = useState<Course[]>([])
+  const { user } = useAuth()
+  const [courses, setCourses] = useState<CourseWithSections[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'enrolled' | 'available'>('all')
   const navigate = useNavigate()
   const neoBrutalismMode = useNeoBrutalismMode()
 
+  // Color palettes for course card backgrounds
+  const courseCardColors = [
+    { bg: 'bg-[#e1e2f6]', iconBg: 'bg-[#fcf9ff]', iconColor: 'text-purple-600' },
+    { bg: 'bg-[#f8efe2]', iconBg: 'bg-[#faf5ec]', iconColor: 'text-orange-600' },
+    { bg: 'bg-[#eff7e2]', iconBg: 'bg-[#f6fbee]', iconColor: 'text-green-600' },
+    { bg: 'bg-[#e2f0f6]', iconBg: 'bg-[#f0f9ff]', iconColor: 'text-blue-600' },
+    { bg: 'bg-[#f6e2f0]', iconBg: 'bg-[#fef0f9]', iconColor: 'text-pink-600' },
+    { bg: 'bg-[#e2f6f0]', iconBg: 'bg-[#f0fef9]', iconColor: 'text-teal-600' },
+    { bg: 'bg-[#f6f0e2]', iconBg: 'bg-[#fef9f0]', iconColor: 'text-amber-600' },
+    { bg: 'bg-[#f0e2f6]', iconBg: 'bg-[#f9f0fe]', iconColor: 'text-violet-600' },
+    { bg: 'bg-[#ffe2e2]', iconBg: 'bg-[#fff0f0]', iconColor: 'text-red-600' },
+    { bg: 'bg-[#e2ffe2]', iconBg: 'bg-[#f0fff0]', iconColor: 'text-emerald-600' },
+    { bg: 'bg-[#e2e2ff]', iconBg: 'bg-[#f0f0ff]', iconColor: 'text-indigo-600' },
+    { bg: 'bg-[#fff2e2]', iconBg: 'bg-[#fffaf0]', iconColor: 'text-yellow-600' },
+    { bg: 'bg-[#e2f2ff]', iconBg: 'bg-[#f0f9ff]', iconColor: 'text-cyan-600' },
+    { bg: 'bg-[#ffe2f2]', iconBg: 'bg-[#fff0f9]', iconColor: 'text-rose-600' },
+    { bg: 'bg-[#f2ffe2]', iconBg: 'bg-[#f9fff0]', iconColor: 'text-lime-600' },
+    { bg: 'bg-[#f2e2ff]', iconBg: 'bg-[#f9f0ff]', iconColor: 'text-fuchsia-600' },
+  ]
+
   useEffect(() => {
     const loadCourses = async () => {
+      if (!user) return
+      
       try {
-        const data = await courseService.getCourses()
+        const data = await studentService.getStudentCoursesWithSections(user.University_ID)
         setCourses(data)
       } catch (error) {
         console.error('Error loading courses:', error)
@@ -50,7 +73,7 @@ export default function CourseListPage() {
     }
 
     loadCourses()
-  }, [])
+  }, [user])
 
   // Filter courses based on search and filter
   const filteredCourses = courses.filter((course) => {
@@ -126,7 +149,8 @@ export default function CourseListPage() {
         {/* Courses Grid */}
         {filteredCourses.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCourses.map((course) => {
+            {filteredCourses.map((course, index) => {
+              const cardConfig = courseCardColors[index % courseCardColors.length]
               return (
                 <Card
                   key={course.Course_ID}
@@ -134,14 +158,25 @@ export default function CourseListPage() {
                     "group relative overflow-hidden flex flex-col h-full",
                     getNeoBrutalismCourseCardClasses(neoBrutalismMode, neoBrutalismMode ? "" : "shadow-none hover:shadow-2xl dark:hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1")
                   )}
-                  onClick={() => navigate(ROUTES.COURSE_DETAIL.replace(':courseId', course.Course_ID.toString()))}
+                  onClick={() => {
+                    // Navigate to first section if available, otherwise to course detail
+                    if (course.Sections && course.Sections.length > 0) {
+                      const firstSection = course.Sections[0]
+                      navigate(ROUTES.SECTION_DETAIL
+                        .replace(':courseId', course.Course_ID.toString())
+                        .replace(':sectionId', firstSection.Section_ID)
+                      )
+                    } else {
+                      navigate(ROUTES.COURSE_DETAIL.replace(':courseId', course.Course_ID.toString()))
+                    }
+                  }}
                 >
                   {/* Simple Header */}
                   <div className={cn(
                     "relative h-24 overflow-hidden",
                     neoBrutalismMode 
                       ? "bg-white dark:bg-[#2a2a2a] border-b-4 border-[#1a1a1a] dark:border-[#FFFBEB]"
-                      : "bg-[#f5f7f9] dark:bg-[#2a2a2a]"
+                      : `${cardConfig.bg} dark:bg-[#2a2a2a]`
                   )}>
                     <div className="absolute top-4 right-4">
                       <Badge className={cn(
@@ -153,12 +188,12 @@ export default function CourseListPage() {
                     </div>
                     <div className="absolute bottom-4 left-4">
                       <div className={cn(
-                        "w-12 h-12 bg-white dark:bg-[#1a1a1a] flex items-center justify-center",
+                        `w-12 h-12 ${cardConfig.iconBg} dark:bg-[#1a1a1a] flex items-center justify-center`,
                         neoBrutalismMode 
                           ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
                           : "rounded-xl border border-[#e5e7e7] dark:border-[#333]"
                       )}>
-                        <BookOpen className="w-6 h-6 text-[#211c37] dark:text-white" />
+                        <BookOpen className={cn("w-6 h-6", cardConfig.iconColor, "dark:text-white")} />
                       </div>
                     </div>
                   </div>
@@ -167,11 +202,17 @@ export default function CourseListPage() {
                   <div className="p-6 space-y-4 flex-1 flex flex-col">
                     <div>
                       <h3 className={cn(
-                        "text-xl font-bold text-[#211c37] dark:text-white mb-2 line-clamp-2 transition-colors",
+                        "text-xl font-bold text-[#211c37] dark:text-white mb-2 transition-colors",
                         !neoBrutalismMode && "group-hover:text-[#3bafa8] dark:group-hover:text-[#3bafa8]",
                         getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
-                      )}>
-                        {course.Name}
+                      )}
+                      style={{ 
+                        minHeight: '3.5rem',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        lineHeight: '1.75rem'
+                      }}>
+                        <span className="line-clamp-2">{course.Name}</span>
                       </h3>
                       <p className={cn(
                         "text-sm text-[#85878d] dark:text-gray-400",
@@ -187,37 +228,33 @@ export default function CourseListPage() {
                         <Award className="w-4 h-4" />
                         <span>{course.Credit} {t('courses.credits')}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[#676767] dark:text-gray-400">
-                        <Users className="w-4 h-4" />
-                        <span>120 {t('courses.students')}</span>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar (Mock) */}
-                    <div className="space-y-2 mt-auto">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-[#85878d] dark:text-gray-400">{t('courses.progress')}</span>
-                        <span className="font-semibold text-[#211c37] dark:text-white">0%</span>
-                      </div>
-                      <div className={cn(
-                        "h-2 bg-[#eff1f3] dark:bg-[#333] overflow-hidden",
-                        neoBrutalismMode ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none" : "rounded-full"
-                      )}>
-                        <div 
-                          className={cn(
-                            "h-full bg-gradient-to-r from-[#3bafa8] to-[#45a8a3] transition-all duration-500",
-                            neoBrutalismMode ? "rounded-none" : "rounded-full"
-                          )}
-                          style={{ width: '0%' }}
-                        ></div>
-                      </div>
+                      {course.Sections && course.Sections.length > 0 && (
+                        <div className="flex items-center gap-2 text-[#676767] dark:text-gray-400">
+                          <Users className="w-4 h-4" />
+                          <span>
+                            {course.Sections.length === 1 
+                              ? `${t('courses.section')} ${course.Sections[0].Section_ID}`
+                              : `${course.Sections.length} ${t('courses.sections')}`
+                            }
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Action Button */}
                     <Button
                       onClick={(e) => {
                         e.stopPropagation()
-                        navigate(ROUTES.COURSE_DETAIL.replace(':courseId', course.Course_ID.toString()))
+                        // Navigate to first section if available, otherwise to course detail
+                        if (course.Sections && course.Sections.length > 0) {
+                          const firstSection = course.Sections[0]
+                          navigate(ROUTES.SECTION_DETAIL
+                            .replace(':courseId', course.Course_ID.toString())
+                            .replace(':sectionId', firstSection.Section_ID)
+                          )
+                        } else {
+                          navigate(ROUTES.COURSE_DETAIL.replace(':courseId', course.Course_ID.toString()))
+                        }
                       }}
                       className={cn(
                         "w-full h-11 group/btn",

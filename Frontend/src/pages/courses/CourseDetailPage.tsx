@@ -6,9 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { courseService } from '@/lib/api/courseService'
-import { quizService } from '@/lib/api/quizService'
-import { gradeService } from '@/lib/api/gradeService'
 import { studentService } from '@/lib/api/studentService'
 import { useAuth } from '@/context/AuthProvider'
 import type { Course, Section, Quiz, Assessment, User } from '@/types'
@@ -42,16 +39,15 @@ export default function CourseDetailPage() {
       
       try {
         setLoading(true)
-        // Convert courseId to string first, then parse if needed
+        // Convert courseId to string first
         const courseIdStr = String(courseId)
-        const courseIdNum = parseInt(courseIdStr)
         
         const [courseData, sectionsData, quizzesData, gradesData, studentsData] = await Promise.all([
-          courseService.getCourseById(courseIdStr), // Use string version
-          courseService.getSectionsByCourse(courseIdStr),
-          quizService.getQuizzesByCourse(user.University_ID, courseIdNum).catch(() => []),
-          gradeService.getGradeByCourse(user.University_ID, courseIdNum).catch(() => []),
-          studentService.getStudentsByCourse(courseIdNum).catch(() => []),
+          studentService.getStudentCourseDetail(user.University_ID, courseIdStr),
+          studentService.getStudentCourseSections(user.University_ID, courseIdStr),
+          studentService.getStudentCourseQuizzes(user.University_ID, courseIdStr).catch(() => []),
+          studentService.getStudentCourseGrades(user.University_ID, courseIdStr).catch(() => []),
+          studentService.getStudentCourseStudents(courseIdStr).catch(() => []),
         ])
         
         if (!courseData) {
@@ -319,19 +315,20 @@ export default function CourseDetailPage() {
                     {quizzes.length > 0 ? (
                       <div className="space-y-3">
                         {quizzes.map((quiz) => {
-                          const passed = quiz.score >= quiz.pass_score
-                          const statusColors = {
+                          const passed = quiz.score && quiz.pass_score && quiz.score >= quiz.pass_score
+                          const statusDisplay = (quiz.status_display || quiz.completion_status || 'Not Taken') as string
+                          const statusColors: Record<string, string> = {
                             'Passed': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
                             'Submitted': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
                             'Failed': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
                             'In Progress': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
                             'Not Taken': 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',
                           }
-                          const statusColor = statusColors[quiz.completion_status] || statusColors['Not Taken']
+                          const statusColor = statusColors[statusDisplay] || statusColors['Not Taken']
 
                           return (
                             <div
-                              key={quiz.Assessment_ID}
+                              key={quiz.QuizID || quiz.Assessment_ID}
                               className={cn(
                                 "p-4 bg-white dark:bg-[#1a1a1a] transition-all",
                                 neoBrutalismMode
@@ -364,7 +361,7 @@ export default function CourseDetailPage() {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                  {quiz.completion_status !== 'Not Taken' && (
+                                  {quiz.score !== null && quiz.score !== undefined && (
                                     <div className="text-right">
                                       <div className={`text-2xl font-bold ${passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                         {quiz.score.toFixed(1)}
@@ -373,13 +370,15 @@ export default function CourseDetailPage() {
                                     </div>
                                   )}
                                   <Badge className={statusColor}>
-                                    {quiz.completion_status}
+                                    {statusDisplay}
                                   </Badge>
                                 </div>
                               </div>
-                              <div className="ml-8 text-xs text-[#85878d] dark:text-gray-400">
-                                {format(new Date(quiz.Start_Date), 'MMM dd, yyyy')} - {format(new Date(quiz.End_Date), 'MMM dd, yyyy')}
-                              </div>
+                              {quiz.Start_Date && quiz.End_Date && (
+                                <div className="ml-8 text-xs text-[#85878d] dark:text-gray-400">
+                                  {format(new Date(quiz.Start_Date), 'MMM dd, yyyy')} - {format(new Date(quiz.End_Date), 'MMM dd, yyyy')}
+                                </div>
+                              )}
                             </div>
                           )
                         })}

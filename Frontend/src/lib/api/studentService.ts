@@ -1,4 +1,4 @@
-import type { User, Course } from '@/types'
+import type { User, Course, Section, Quiz, Assessment, Assignment } from '@/types'
 import apiClient from './client'
 
 // Student Dashboard Statistics
@@ -103,5 +103,99 @@ export const studentService = {
     })
     return response.data
   },
+
+  // Student Course Detail
+  async getStudentCourseDetail(universityId: number, courseId: string): Promise<Course | null> {
+    const response = await apiClient.get(`/students/course/${courseId}/detail`, {
+      params: { university_id: universityId }
+    })
+    return response.data
+  },
+
+  async getStudentCourseSections(universityId: number, courseId: string): Promise<Section[]> {
+    const response = await apiClient.get(`/students/course/${courseId}/sections`, {
+      params: { university_id: universityId }
+    })
+    return response.data
+  },
+
+  async getStudentCourseQuizzes(universityId: number, courseId: string): Promise<Quiz[]> {
+    const response = await apiClient.get(`/students/course/${courseId}/quizzes`, {
+      params: { university_id: universityId }
+    })
+    return response.data
+  },
+
+  async getStudentCourseGrades(universityId: number, courseId: string): Promise<Assessment[]> {
+    const response = await apiClient.get(`/students/course/${courseId}/grades`, {
+      params: { university_id: universityId }
+    })
+    return response.data
+  },
+
+  async getStudentCourseStudents(courseId: string): Promise<User[]> {
+    const response = await apiClient.get(`/students/course/${courseId}/students`)
+    return response.data
+  },
+
+  // Student Courses with Sections
+  async getStudentCoursesWithSections(universityId: number): Promise<CourseWithSections[]> {
+    const response = await apiClient.get('/students/courses/with-sections', {
+      params: { university_id: universityId }
+    })
+    return response.data
+  },
+
+  async getStudentSectionDetail(universityId: number, sectionId: string, courseId: string): Promise<SectionDetail | null> {
+    const response = await apiClient.get(`/students/section/${sectionId}/${courseId}/detail`, {
+      params: { university_id: universityId }
+    })
+    return response.data
+  },
+
+  // Student Section Detail
+  async getStudentSectionQuizzes(universityId: number, sectionId: string, courseId: string, semester: string): Promise<Quiz[]> {
+    const response = await apiClient.get(`/students/section/${sectionId}/${courseId}/${semester}/quizzes`, {
+      params: { university_id: universityId }
+    })
+    return response.data
+  },
+
+  async getStudentSectionAssignments(universityId: number, sectionId: string, courseId: string, semester: string): Promise<Assignment[]> {
+    const response = await apiClient.get(`/students/section/${sectionId}/${courseId}/${semester}/assignments`, {
+      params: { university_id: universityId }
+    })
+    return response.data
+  },
+
+  async getStudentSectionGrades(universityId: number, sectionId: string, courseId: string, semester: string): Promise<Assessment | null> {
+    const response = await apiClient.get(`/students/section/${sectionId}/${courseId}/${semester}/grades`, {
+      params: { university_id: universityId }
+    })
+    return response.data
+  },
+
+  async getStudentSectionStudents(sectionId: string, courseId: string, semester: string): Promise<User[]> {
+    const response = await apiClient.get(`/students/section/${sectionId}/${courseId}/${semester}/students`)
+    return response.data
+  },
+}
+
+// Course with Sections Interface
+export interface CourseWithSections extends Course {
+  Sections: Array<{
+    Section_ID: string
+    Semester: string
+  }>
+}
+
+// Section Detail Interface
+export interface SectionDetail {
+  Section_ID: string
+  Course_ID: string
+  Semester: string
+  Course_Name: string
+  Credit: number | null
+  CCategory: string | null
 }
 

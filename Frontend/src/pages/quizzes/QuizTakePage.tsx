@@ -27,7 +27,7 @@ export default function QuizTakePage() {
       try {
         const data = await quizService.getQuizById(parseInt(quizId))
         setQuiz(data)
-        if (data) {
+        if (data && data.Time_limits) {
           // Parse time limits (HH:MM:SS)
           const [hours, minutes, seconds] = data.Time_limits.split(':').map(Number)
           setTimeLeft(hours * 3600 + minutes * 60 + seconds)

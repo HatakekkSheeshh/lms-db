@@ -60,7 +60,7 @@ export default function GradeDetailPage() {
   }
 
   const averageGrade = grades.length > 0
-    ? (grades.reduce((sum, g) => sum + g.Grade, 0) / grades.length).toFixed(2)
+    ? (grades.reduce((sum, g) => sum + (g.Grade || 0), 0) / grades.length).toFixed(2)
     : 'N/A'
 
   return (
@@ -156,7 +156,7 @@ export default function GradeDetailPage() {
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             <span>
-                              {new Date(grade.Registration_Date).toLocaleDateString('vi-VN')}
+                              {grade.Registration_Date ? new Date(grade.Registration_Date).toLocaleDateString('vi-VN') : 'N/A'}
                             </span>
                           </div>
                         </div>
@@ -165,7 +165,7 @@ export default function GradeDetailPage() {
                         <div className={cn(
                           "text-3xl font-bold text-[#3bafa8] dark:text-teal-400",
                           getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
-                        )}>{grade.Grade.toFixed(2)}</div>
+                        )}>{grade.Grade ? grade.Grade.toFixed(2) : 'N/A'}</div>
                         <p className={cn(
                           "text-sm text-[#85878d] dark:text-gray-400",
                           getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
