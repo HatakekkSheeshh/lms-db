@@ -4,11 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import DashboardLayout from '@/components/layout/DashboardLayout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { assignmentService } from '@/lib/api/assignmentService'
-import { courseService } from '@/lib/api/courseService'
 import { useAuth } from '@/context/AuthProvider'
 import type { Assignment, Course } from '@/types'
 import { ROUTES } from '@/constants/routes'
@@ -90,6 +89,25 @@ export default function AssignmentListPage() {
     loadAssignments()
   }, [user])
 
+  // Group assignments by course
+  const groupedAssignments = assignments.reduce((acc, assignment) => {
+    if (!assignment.submission_deadline) return acc
+    
+    const courseKey = assignment.Course_ID?.toString() || 'unknown'
+    const courseName = assignment.Course_Name || `Course ${assignment.Course_ID || 'Unknown'}`
+    
+    if (!acc[courseKey]) {
+      acc[courseKey] = {
+        courseName,
+        courseId: assignment.Course_ID,
+        assignments: []
+      }
+    }
+    
+    acc[courseKey].assignments.push(assignment)
+    return acc
+  }, {} as Record<string, { courseName: string; courseId: string | number | undefined; assignments: AssignmentWithCourse[] }>)
+
   const getStatus = (deadline: string | null | undefined) => {
     if (!deadline) return { text: t('assignments.onTime'), variant: 'secondary' as const, color: 'bg-green-500' }
     const now = new Date()
@@ -118,71 +136,78 @@ export default function AssignmentListPage() {
       title={t('assignments.title')} 
       subtitle={t('assignments.subtitle')}
     >
-      <div ref={containerRef} className="space-y-4">
-        {assignments.map((assignment) => {
-          if (!assignment.submission_deadline) return null
-          const status = getStatus(assignment.submission_deadline)
-          const deadlineDate = new Date(assignment.submission_deadline)
-          const now = new Date()
-          const diff = deadlineDate.getTime() - now.getTime()
-          const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24))
-          const hoursLeft = Math.ceil(diff / (1000 * 60 * 60))
-          
-          return (
-            <Card 
-              key={assignment.Assessment_ID} 
-              className={cn(
-                getNeoBrutalismCardClasses(neoBrutalismMode),
-                !neoBrutalismMode && "hover:shadow-lg transition-shadow"
-              )}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className={cn(
-                      "w-12 h-12 bg-[#e1e2f6] dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0",
-                      neoBrutalismMode 
-                        ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
-                        : "rounded-lg"
-                    )}>
-                      <FileText className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CardTitle className={cn(
-                          "text-lg text-[#1f1d39] dark:text-white",
-                          getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+      <div ref={containerRef} className="space-y-6">
+        {Object.entries(groupedAssignments).map(([courseKey, group]) => (
+          <div key={courseKey} className="space-y-4">
+            {/* Course Header */}
+            <div className={cn(
+              "flex items-center gap-3 pb-2 border-b-2",
+              neoBrutalismMode
+                ? "border-[#1a1a1a] dark:border-[#FFFBEB]"
+                : "border-[#e5e7e7] dark:border-[#333]"
+            )}>
+              <BookOpen className="h-5 w-5 text-[#3bafa8] dark:text-[#3bafa8]" />
+              <h2 className={cn(
+                "text-xl font-bold text-[#1f1d39] dark:text-white",
+                getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+              )}>
+                {group.courseName}
+              </h2>
+              <Badge variant="outline" className={cn(
+                "text-xs",
+                neoBrutalismMode 
+                  ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                  : "border-[#e5e7e7] dark:border-[#333]"
+              )}>
+                {group.assignments.length} {group.assignments.length === 1 ? t('assignments.assignment') : t('assignments.assignments') || 'Assignments'}
+              </Badge>
+            </div>
+
+            {/* Assignments for this course */}
+            {group.assignments.map((assignment) => {
+              const status = getStatus(assignment.submission_deadline)
+              const deadlineDate = new Date(assignment.submission_deadline!)
+              const now = new Date()
+              const diff = deadlineDate.getTime() - now.getTime()
+              const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24))
+              const hoursLeft = Math.ceil(diff / (1000 * 60 * 60))
+              
+              return (
+                <Card 
+                  key={assignment.Assessment_ID} 
+                  className={cn(
+                    getNeoBrutalismCardClasses(neoBrutalismMode),
+                    !neoBrutalismMode && "hover:shadow-lg transition-shadow"
+                  )}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className={cn(
+                          "w-12 h-12 bg-[#e1e2f6] dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0",
+                          neoBrutalismMode 
+                            ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                            : "rounded-lg"
                         )}>
-                          {t('assignments.assignment')} {assignment.Assessment_ID}
-                        </CardTitle>
-                        {assignment.course && (
-                          <Badge variant="outline" className={cn(
-                            "text-xs",
-                            neoBrutalismMode 
-                              ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
-                              : "border-[#e5e7e7] dark:border-[#333]"
+                          <FileText className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div className="flex-1">
+                          <CardTitle className={cn(
+                            "text-lg text-[#1f1d39] dark:text-white mb-1",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
                           )}>
-                            <BookOpen className="h-3 w-3 mr-1" />
-                            {assignment.course.Name || `Course ${assignment.Course_ID}`}
-                          </Badge>
-                        )}
+                            {assignment.instructions || t('assignments.noInstructions')}
+                          </CardTitle>
+                        </div>
                       </div>
-                      <CardDescription className={cn(
-                        "text-sm text-[#85878d] dark:text-gray-400",
-                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      <Badge className={cn(
+                        `${status.color} text-white`,
+                        neoBrutalismMode && "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
                       )}>
-                        {assignment.instructions || t('assignments.noInstructions')}
-                      </CardDescription>
+                        <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{status.text}</span>
+                      </Badge>
                     </div>
-                  </div>
-                  <Badge className={cn(
-                    `${status.color} text-white`,
-                    neoBrutalismMode && "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
-                  )}>
-                    <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{status.text}</span>
-                  </Badge>
-                </div>
-              </CardHeader>
+                  </CardHeader>
               <CardContent className="space-y-4">
                 <div className={cn(
                   "p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
@@ -288,10 +313,12 @@ export default function AssignmentListPage() {
                     </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          )
-        })}
+                </CardContent>
+              </Card>
+            )
+            })}
+          </div>
+        ))}
 
         {assignments.length === 0 && (
           <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>

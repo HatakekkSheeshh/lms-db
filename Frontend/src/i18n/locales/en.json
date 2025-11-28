@@ -245,7 +245,8 @@
     "daysLeft": "days left",
     "score": "Score",
     "submittedOn": "Submitted on",
-    "viewSubmission": "View Submission"
+    "viewSubmission": "View Submission",
+    "assignments": "Assignments"
   },
   "quizzes": {
     "title": "Quizzes",
@@ -270,11 +271,14 @@
     "closed": "Closed",
     "starts": "Starts",
     "available": "Available",
+    "deadline": "Deadline",
     "yourScore": "Your Score",
+    "reviewQuiz": "Review Quiz",
     "noQuizzes": "No quizzes found",
     "noQuizzesAvailable": "No quizzes available",
     "allQuizzes": "All your quizzes across all courses",
-    "noQuizzesOrAssignments": "No quizzes or assignments available"
+    "noQuizzesOrAssignments": "No quizzes or assignments available",
+    "quizzes": "Quizzes"
   },
   "grades": {
     "title": "Grades",
@@ -303,7 +307,30 @@
     "noGradesForCourse": "No grades available for this course",
     "approved": "Approved",
     "rejected": "Rejected",
-    "pending": "Pending"
+    "pending": "Pending",
+    "quizGrade": "Quiz Grade",
+    "assignmentGrade": "Assignment Grade",
+    "midtermGrade": "Midterm Grade",
+    "finalGrade": "Final Grade",
+    "overallAverage": "Overall Average",
+    "totalCredits": "Total Credits",
+    "creditsEarned": "Credits Earned",
+    "assessments": "Assessments",
+    "byCourse": "By Course",
+    "breakdown": "Grade Breakdown",
+    "semesterTrend": "Semester Trend",
+    "averageByCourse": "Average Grade by Course",
+    "courseAverageDescription": "Average grades across all your courses",
+    "gradeBreakdown": "Grade Breakdown",
+    "breakdownDescription": "Average scores by grade type",
+    "trendDescription": "Your grade progression over semesters",
+    "noSemesterData": "No semester data available",
+    "overall": "Overall",
+    "gpa": "GPA",
+    "overallGPA": "Overall GPA",
+    "gpaByCourse": "GPA by Course",
+    "courseGPADescription": "GPA across all your courses",
+    "averageScore": "Average Score"
   },
   "schedule": {
     "title": "Schedule",

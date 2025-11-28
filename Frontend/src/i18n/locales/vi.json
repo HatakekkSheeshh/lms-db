@@ -244,7 +244,8 @@
     "submittedOn": "Đã nộp vào",
     "points": "điểm",
     "daysLeft": "ngày còn lại",
-    "score": "Điểm"
+    "score": "Điểm",
+    "assignments": "Bài tập"
   },
   "quizzes": {
     "title": "Bài kiểm tra",
@@ -270,11 +271,14 @@
     "closed": "Đã đóng",
     "starts": "Bắt đầu",
     "available": "Có sẵn",
+    "deadline": "Hạn chót",
     "yourScore": "Điểm của bạn",
+    "reviewQuiz": "Xem lại bài kiểm tra",
     "noQuizzes": "Không tìm thấy bài kiểm tra",
     "noQuizzesAvailable": "Không có bài kiểm tra nào",
     "allQuizzes": "Tất cả bài kiểm tra của bạn từ tất cả khóa học",
-    "noQuizzesOrAssignments": "Không có bài kiểm tra hoặc bài tập nào"
+    "noQuizzesOrAssignments": "Không có bài kiểm tra hoặc bài tập nào",
+    "quizzes": "Bài kiểm tra"
   },
   "grades": {
     "title": "Điểm số",
@@ -303,7 +307,30 @@
     "noGradesForCourse": "Không có điểm số cho khóa học này",
     "approved": "Đã duyệt",
     "rejected": "Đã từ chối",
-    "pending": "Chờ xử lý"
+    "pending": "Chờ xử lý",
+    "quizGrade": "Điểm Quiz",
+    "assignmentGrade": "Điểm Bài tập",
+    "midtermGrade": "Điểm Giữa kỳ",
+    "finalGrade": "Điểm Cuối kỳ",
+    "overallAverage": "Điểm trung bình tổng",
+    "totalCredits": "Tổng tín chỉ",
+    "creditsEarned": "Tín chỉ đã đạt",
+    "assessments": "Đánh giá",
+    "byCourse": "Theo khóa học",
+    "breakdown": "Phân tích điểm số",
+    "semesterTrend": "Xu hướng theo học kỳ",
+    "averageByCourse": "Điểm trung bình theo khóa học",
+    "courseAverageDescription": "Điểm trung bình của tất cả khóa học",
+    "gradeBreakdown": "Phân tích điểm số",
+    "breakdownDescription": "Điểm trung bình theo loại điểm",
+    "trendDescription": "Tiến trình điểm số của bạn qua các học kỳ",
+    "noSemesterData": "Không có dữ liệu học kỳ",
+    "overall": "Tổng thể",
+    "gpa": "GPA",
+    "overallGPA": "GPA tổng thể",
+    "gpaByCourse": "GPA theo khóa học",
+    "courseGPADescription": "GPA của tất cả khóa học",
+    "averageScore": "Điểm trung bình"
   },
   "schedule": {
     "title": "Lịch học",

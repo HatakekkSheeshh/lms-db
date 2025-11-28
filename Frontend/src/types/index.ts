@@ -85,6 +85,7 @@ export interface Quiz {
   Correct_answer?: string
   Questions?: string
   status_display?: string
+  Course_Name?: string
 }
 
 export interface Submission {
@@ -114,5 +115,8 @@ export interface Assessment {
   Registration_Date?: string
   Potential_Withdrawal_Date?: string
   Status?: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'Withdrawn' | string
+  Course_Name?: string
+  Credits?: number
+  GPA?: number | null
 }
 

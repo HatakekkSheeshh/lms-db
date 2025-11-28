@@ -4,11 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import DashboardLayout from '@/components/layout/DashboardLayout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { quizService } from '@/lib/api/quizService'
-import { courseService } from '@/lib/api/courseService'
 import { useAuth } from '@/context/AuthProvider'
 import type { Quiz, Course } from '@/types'
 import { ROUTES } from '@/constants/routes'
@@ -90,6 +89,23 @@ export default function QuizListPage() {
     loadQuizzes()
   }, [user])
 
+  // Group quizzes by course
+  const groupedQuizzes = quizzes.reduce((acc, quiz) => {
+    const courseKey = quiz.Course_ID?.toString() || 'unknown'
+    const courseName = quiz.Course_Name || `Course ${quiz.Course_ID || 'Unknown'}`
+    
+    if (!acc[courseKey]) {
+      acc[courseKey] = {
+        courseName,
+        courseId: quiz.Course_ID,
+        quizzes: []
+      }
+    }
+    
+    acc[courseKey].quizzes.push(quiz)
+    return acc
+  }, {} as Record<string, { courseName: string; courseId: string | number | undefined; quizzes: QuizWithCourse[] }>)
+
   const getStatusBadge = (quiz: Quiz) => {
     if (!quiz.Start_Date || !quiz.End_Date) {
       return { text: t('quizzes.notStarted'), variant: 'secondary' as const, icon: Clock }
@@ -133,71 +149,83 @@ export default function QuizListPage() {
       title={t('quizzes.title')} 
       subtitle={t('quizzes.subtitle')}
     >
-      <div ref={containerRef} className="space-y-4">
-        {quizzes.map((quiz) => {
-          const status = getStatusBadge(quiz)
-          const StatusIcon = status.icon
-          const canTake = quiz.completion_status === 'Not Taken' || quiz.completion_status === 'In Progress'
-          const now = new Date()
-          const startDate = quiz.Start_Date ? new Date(quiz.Start_Date) : null
-          const endDate = quiz.End_Date ? new Date(quiz.End_Date) : null
-          const isAvailable = startDate && endDate && now >= startDate && now <= endDate
-          const diff = endDate ? endDate.getTime() - now.getTime() : 0
-          const daysLeft = endDate ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0
-          const hoursLeft = endDate ? Math.ceil(diff / (1000 * 60 * 60)) : 0
+      <div ref={containerRef} className="space-y-6">
+        {Object.entries(groupedQuizzes).map(([courseKey, group]) => (
+          <div key={courseKey} className="space-y-4">
+            {/* Course Header */}
+            <div className={cn(
+              "flex items-center gap-3 pb-2 border-b-2",
+              neoBrutalismMode
+                ? "border-[#1a1a1a] dark:border-[#FFFBEB]"
+                : "border-[#e5e7e7] dark:border-[#333]"
+            )}>
+              <BookOpen className="h-5 w-5 text-[#3bafa8] dark:text-[#3bafa8]" />
+              <h2 className={cn(
+                "text-xl font-bold text-[#1f1d39] dark:text-white",
+                getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+              )}>
+                {group.courseName}
+              </h2>
+              <Badge variant="outline" className={cn(
+                "text-xs",
+                neoBrutalismMode 
+                  ? "border-2 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                  : "border-[#e5e7e7] dark:border-[#333]"
+              )}>
+                {group.quizzes.length} {group.quizzes.length === 1 ? t('quizzes.quiz') : t('quizzes.quizzes') || 'Quizzes'}
+              </Badge>
+            </div>
 
-          return (
-            <Card 
-              key={quiz.Assessment_ID} 
-              className={cn(
-                getNeoBrutalismCardClasses(neoBrutalismMode),
-                !neoBrutalismMode && "hover:shadow-lg transition-shadow"
-              )}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className={cn(
-                      "w-12 h-12 bg-[#e1e2f6] dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0",
-                      neoBrutalismMode 
-                        ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
-                        : "rounded-lg"
-                    )}>
-                      <HelpCircle className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CardTitle className={cn(
-                          "text-lg text-[#1f1d39] dark:text-white",
-                          getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
-                        )}>{t('quizzes.quiz')} {quiz.Assessment_ID}</CardTitle>
-                        {quiz.course && (
-                          <Badge variant="outline" className={cn(
-                            "text-xs",
-                            neoBrutalismMode 
-                              ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
-                              : "border-[#e5e7e7] dark:border-[#333]"
+            {/* Quizzes for this course */}
+            {group.quizzes.map((quiz) => {
+              const status = getStatusBadge(quiz)
+              const StatusIcon = status.icon
+              const canTake = quiz.completion_status === 'Not Taken' || quiz.completion_status === 'In Progress'
+              const now = new Date()
+              const startDate = quiz.Start_Date ? new Date(quiz.Start_Date) : null
+              const endDate = quiz.End_Date ? new Date(quiz.End_Date) : null
+              const isAvailable = startDate && endDate && now >= startDate && now <= endDate
+              const diff = endDate ? endDate.getTime() - now.getTime() : 0
+              const daysLeft = endDate ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0
+              const hoursLeft = endDate ? Math.ceil(diff / (1000 * 60 * 60)) : 0
+
+              return (
+                <Card 
+                  key={quiz.Assessment_ID} 
+                  className={cn(
+                    getNeoBrutalismCardClasses(neoBrutalismMode),
+                    !neoBrutalismMode && "hover:shadow-lg transition-shadow"
+                  )}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className={cn(
+                          "w-12 h-12 bg-[#e1e2f6] dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0",
+                          neoBrutalismMode 
+                            ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                            : "rounded-lg"
+                        )}>
+                          <HelpCircle className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div className="flex-1">
+                          <CardTitle className={cn(
+                            "text-lg text-[#1f1d39] dark:text-white mb-1",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
                           )}>
-                            <BookOpen className="h-3 w-3 mr-1" />
-                            {quiz.course.Name || `Course ${quiz.Course_ID}`}
-                          </Badge>
-                        )}
+                            {quiz.content || t('quizzes.quiz')}
+                          </CardTitle>
+                        </div>
                       </div>
-                      <CardDescription className={cn(
-                        "text-sm text-[#85878d] dark:text-gray-400",
-                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
-                      )}>{quiz.content}</CardDescription>
+                      <Badge variant={status.variant} className={cn(
+                        "flex items-center gap-1",
+                        neoBrutalismMode && "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                      )}>
+                        <StatusIcon className="h-3 w-3" />
+                        <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{status.text}</span>
+                      </Badge>
                     </div>
-                  </div>
-                  <Badge variant={status.variant} className={cn(
-                    "flex items-center gap-1",
-                    neoBrutalismMode && "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
-                  )}>
-                    <StatusIcon className="h-3 w-3" />
-                    <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{status.text}</span>
-                  </Badge>
-                </div>
-              </CardHeader>
+                  </CardHeader>
               <CardContent className="space-y-4">
                 <div className={cn(
                   "p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800",
@@ -354,10 +382,12 @@ export default function QuizListPage() {
                     </Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+                </CardContent>
+              </Card>
+            )
+            })}
+          </div>
+        ))}
 
         {quizzes.length === 0 && (
           <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>

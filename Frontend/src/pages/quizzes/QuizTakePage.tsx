@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { quizService } from '@/lib/api/quizService'
 import { useAuthStore } from '@/store/authStore'
@@ -205,12 +204,6 @@ export default function QuizTakePage() {
     const selectedAnswer = answers[questionIndex.toString()]
     const correctAnswer = question.correct
     return selectedAnswer === correctAnswer
-  }
-
-  // Get correct answer for a question
-  const getCorrectAnswer = (questionIndex: number) => {
-    const question = questions[questionIndex]
-    return question?.correct || null
   }
 
   if (loading) {
