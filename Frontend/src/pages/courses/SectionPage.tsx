@@ -31,6 +31,7 @@ export default function SectionPage() {
   const [grades, setGrades] = useState<Assessment | null>(null)
   const [students, setStudents] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const neoBrutalismMode = useNeoBrutalismMode()
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function SectionPage() {
         }
       } catch (error) {
         console.error('Error loading section:', error)
+        setError(t('courses.errorLoadingSection') || 'Failed to load section details')
       } finally {
         setLoading(false)
       }
@@ -71,6 +73,32 @@ export default function SectionPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-lg">{t('common.loading')}</div>
         </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <Card className={getNeoBrutalismCardClasses(neoBrutalismMode)}>
+          <CardContent className="py-8 text-center">
+            <p className={cn(
+              "text-lg font-semibold text-red-600 dark:text-red-400 mb-2",
+              getNeoBrutalismTextClasses(neoBrutalismMode, 'heading')
+            )}>{error}</p>
+            <Button
+              onClick={() => navigate(ROUTES.COURSES)}
+              className={cn(
+                "mt-4",
+                neoBrutalismMode
+                  ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] bg-white dark:bg-[#2a2a2a] rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,251,235,1)]"
+                  : ""
+              )}
+            >
+              {t('courses.backToCourses')}
+            </Button>
+          </CardContent>
+        </Card>
       </DashboardLayout>
     )
   }
@@ -224,7 +252,12 @@ export default function SectionPage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <CourseContentCard courseId={parseInt(sectionDetail.Course_ID)} />
+                      <CourseContentCard 
+                        courseId={parseInt(sectionDetail.Course_ID) || 0}
+                        sectionId={sectionDetail.Section_ID}
+                        quizzes={quizzes}
+                        assignments={assignments}
+                      />
                     </CardContent>
                   </Card>
                 </div>

@@ -23,7 +23,8 @@
     "confirm": "Xác nhận",
     "yes": "Có",
     "no": "Không",
-    "size": "Kích thước"
+    "size": "Kích thước",
+    "optional": "(Tùy chọn)"
   },
   "auth": {
     "loginTitle": "Chào mừng trở lại!",
@@ -164,6 +165,8 @@
     "searchPlaceholder": "Tìm kiếm khóa học...",
     "all": "Tất cả",
     "courseCode": "Mã khóa học",
+    "course": "Khóa học",
+    "courses": "Các khóa học",
     "students": "học viên",
     "noCoursesFound": "Không tìm thấy khóa học",
     "noCoursesYet": "Chưa có khóa học nào",
@@ -193,6 +196,7 @@
     "sectionId": "Mã lớp học",
     "courseNotFound": "Không tìm thấy khóa học",
     "sectionNotFound": "Không tìm thấy lớp học",
+    "errorLoadingSection": "Không thể tải thông tin lớp học. Vui lòng thử lại sau.",
     "deadline": "Hạn nộp",
     "assignmentGrades": "Điểm bài tập",
     "noAssignmentGrades": "Không có điểm bài tập",
@@ -234,7 +238,8 @@
     "maxScore": "Điểm tối đa",
     "format": "Định dạng",
     "noInstructions": "Không có hướng dẫn",
-    "allAssignments": "Tất cả bài tập của bạn từ tất cả khóa học"
+    "allAssignments": "Tất cả bài tập của bạn từ tất cả khóa học",
+    "viewSubmission": "Xem bài nộp"
   },
   "quizzes": {
     "title": "Bài kiểm tra",
@@ -262,7 +267,8 @@
     "yourScore": "Điểm của bạn",
     "noQuizzes": "Không tìm thấy bài kiểm tra",
     "noQuizzesAvailable": "Không có bài kiểm tra nào",
-    "allQuizzes": "Tất cả bài kiểm tra của bạn từ tất cả khóa học"
+    "allQuizzes": "Tất cả bài kiểm tra của bạn từ tất cả khóa học",
+    "noQuizzesOrAssignments": "Không có bài kiểm tra hoặc bài tập nào"
   },
   "grades": {
     "title": "Điểm số",
@@ -772,6 +778,7 @@
     "selectDate": "Chọn ngày",
     "assignmentManagement": "Quản lý bài tập",
     "assignmentManagementSubtitle": "Quản lý tất cả bài tập trong hệ thống",
+    "assignment": "Bài tập",
     "addAssignment": "Thêm bài tập",
     "editAssignment": "Chỉnh sửa bài tập",
     "deleteAssignment": "Xóa bài tập",
@@ -779,6 +786,14 @@
     "deadline": "Hạn nộp",
     "instructions": "Hướng dẫn",
     "acceptedFormat": "Định dạng chấp nhận",
+    "taskURL": "Đề bài bài tập lớn",
+    "onlyPdfAllowed": "Chỉ cho phép file PDF",
+    "fileTooLarge": "Kích thước file phải nhỏ hơn 10MB",
+    "selectCourseFirst": "Vui lòng chọn khóa học trước",
+    "fileUploadedSuccessfully": "Tải file lên thành công",
+    "uploadFailed": "Tải file lên thất bại",
+    "uploading": "Đang tải lên...",
+    "orEnterUrl": "Hoặc nhập URL thủ công:",
     "noAssignments": "Không tìm thấy bài tập",
     "assignmentList": "Danh sách bài tập",
     "totalAssignments": "Tổng số bài tập",
@@ -963,6 +978,7 @@
     "title": "Nộp bài tập",
     "subtitle": "Tải lên file bài tập của bạn",
     "backToAssignments": "Quay lại danh sách bài tập",
+    "backToCourse": "Quay lại khóa học",
     "selectFile": "Chọn file",
     "selected": "Đã chọn",
     "submitting": "Đang nộp...",
@@ -975,6 +991,7 @@
   "assignmentDetail": {
     "title": "Chi tiết bài tập",
     "backToAssignments": "Quay lại danh sách bài tập",
+    "backToCourse": "Quay lại khóa học",
     "instructions": "Hướng dẫn",
     "deadline": "Hạn chót",
     "maxScore": "Điểm tối đa",

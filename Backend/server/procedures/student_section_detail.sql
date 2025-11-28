@@ -92,6 +92,8 @@ BEGIN
             ad.instructions,
             ad.accepted_specification,
             ad.submission_deadline,
+            ad.TaskURL,
+            ad.MaxScore,
             -- Student's submission data
             asub.Assessment_ID,
             asub.score,

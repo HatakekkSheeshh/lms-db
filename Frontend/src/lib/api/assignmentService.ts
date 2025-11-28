@@ -7,9 +7,14 @@ export const assignmentService = {
     return response.data
   },
 
-  async getAssignmentById(assignmentId: number): Promise<Assignment | null> {
+  async getAssignmentById(assignmentId: number, universityId?: number, sectionId?: string, courseId?: string): Promise<Assignment | null> {
     try {
-      const response = await apiClient.get(`/assignments/${assignmentId}`)
+      const params: any = {}
+      if (universityId) params.university_id = universityId
+      if (sectionId) params.section_id = sectionId
+      if (courseId) params.course_id = courseId
+      
+      const response = await apiClient.get(`/assignments/${assignmentId}`, { params })
       return response.data
     } catch (error: any) {
       if (error.response?.status === 404) {

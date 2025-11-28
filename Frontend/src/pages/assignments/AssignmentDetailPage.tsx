@@ -52,9 +52,9 @@ export default function AssignmentDetailPage() {
     )
   }
 
-  const deadline = new Date(assignment.submission_deadline)
+  const deadline = assignment.submission_deadline ? new Date(assignment.submission_deadline) : null
   const now = new Date()
-  const isOverdue = now > deadline
+  const isOverdue = deadline ? now > deadline : false
 
   return (
     <DashboardLayout 
@@ -104,7 +104,7 @@ export default function AssignmentDetailPage() {
                 <div>
                   <p className="text-sm font-medium text-[#676767] mb-1">{t('assignmentDetail.deadline')}</p>
                   <p className="text-sm font-semibold text-[#1f1d39]">
-                    {deadline.toLocaleString('vi-VN')}
+                    {deadline ? deadline.toLocaleString('vi-VN') : t('assignments.noDeadline') || 'No deadline'}
                   </p>
                 </div>
               </div>

@@ -42,14 +42,24 @@ export interface Section {
 }
 
 export interface Assignment {
-  University_ID: number
-  Section_ID: number
-  Course_ID: number
-  Assessment_ID: number
-  MaxScore: number
+  University_ID?: number
+  Section_ID?: number | string
+  Course_ID?: number | string
+  Assessment_ID?: number
+  AssignmentID?: number
+  MaxScore?: number
   accepted_specification?: string
-  submission_deadline: string
+  submission_deadline?: string
   instructions?: string
+  TaskURL?: string | null
+  score?: number | null
+  status?: string
+  status_display?: string
+  SubmitDate?: string
+  late_flag_indicator?: boolean
+  attached_files?: string
+  Comments?: string
+  Semester?: string
 }
 
 export interface Quiz {

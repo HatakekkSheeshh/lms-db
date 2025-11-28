@@ -35,7 +35,7 @@ import {
 } from '@tanstack/react-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { adminService, type AdminAssignment, type AdminCourse } from '@/lib/api/adminService'
-import { Plus, Edit2, Trash2, BookOpen, ArrowUpDown, ChevronDown, Loader2, ChevronUp, Eye, HelpCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, BookOpen, ArrowUpDown, ChevronDown, Loader2, ChevronUp, Eye, HelpCircle, X, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { 
   useNeoBrutalismMode, 
@@ -45,6 +45,7 @@ import {
   getNeoBrutalismTextClasses 
 } from '@/lib/utils/theme-utils'
 import AdvancedSearchPanel, { type SearchFilters } from '@/components/admin/AdvancedSearchPanel'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 
 export default function AssignmentManagementPage() {
   const { t } = useTranslation()
@@ -75,9 +76,12 @@ export default function AssignmentManagementPage() {
     Semester: '',
     MaxScore: '',
     accepted_specification: '',
-    submission_deadline: '',
+    submission_deadline: undefined as Date | undefined,
     instructions: '',
+    TaskURL: '',
   })
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   useEffect(() => {
     loadCourses()
@@ -187,9 +191,11 @@ export default function AssignmentManagementPage() {
       Semester: '',
       MaxScore: '10',
       accepted_specification: '',
-      submission_deadline: '',
+      submission_deadline: undefined,
       instructions: '',
+      TaskURL: '',
     })
+    setSelectedFile(null)
     setIsDialogOpen(true)
   }
 
@@ -200,9 +206,11 @@ export default function AssignmentManagementPage() {
       Semester: semester,
       MaxScore: '10',
       accepted_specification: '',
-      submission_deadline: '',
+      submission_deadline: undefined,
       instructions: '',
+      TaskURL: '',
     })
+    setSelectedFile(null)
     setIsDialogOpen(true)
   }
 
@@ -258,9 +266,11 @@ export default function AssignmentManagementPage() {
       Semester: assignment.Semester,
       MaxScore: assignment.MaxScore?.toString() || '10',
       accepted_specification: assignment.accepted_specification || '',
-      submission_deadline: assignment.submission_deadline ? new Date(assignment.submission_deadline).toISOString().slice(0, 16) : '',
+      submission_deadline: assignment.submission_deadline ? new Date(assignment.submission_deadline) : undefined,
       instructions: assignment.instructions || '',
+      TaskURL: assignment.TaskURL || '',
     })
+    setSelectedFile(null) // Reset selected file when editing
     setIsDialogOpen(true)
   }
 
@@ -292,6 +302,54 @@ export default function AssignmentManagementPage() {
     }
   }
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Check if file is PDF
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      alert(t('admin.onlyPdfAllowed') || 'Only PDF files are allowed')
+      return
+    }
+
+    // Check file size (e.g., max 10MB)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      alert(t('admin.fileTooLarge') || 'File size must be less than 10MB')
+      return
+    }
+
+    if (!formData.Course_ID) {
+      alert(t('admin.selectCourseFirst') || 'Please select a course first')
+      return
+    }
+
+    setSelectedFile(file)
+    setUploadingFile(true)
+
+    try {
+      const result = await adminService.uploadAssignmentTask(file, formData.Course_ID)
+      if (result.success && result.url) {
+        setFormData({ ...formData, TaskURL: result.url })
+        alert(t('admin.fileUploadedSuccessfully') || 'File uploaded successfully')
+      } else {
+        alert(result.error || t('admin.uploadFailed') || 'Failed to upload file')
+        setSelectedFile(null)
+      }
+    } catch (error: any) {
+      console.error('Error uploading file:', error)
+      alert(error?.message || t('admin.uploadFailed') || 'Failed to upload file')
+      setSelectedFile(null)
+    } finally {
+      setUploadingFile(false)
+    }
+  }
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null)
+    setFormData({ ...formData, TaskURL: '' })
+  }
+
   const handleSaveAssignment = async (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault()
@@ -304,14 +362,27 @@ export default function AssignmentManagementPage() {
     }
 
     try {
+      // Format date for API (YYYY-MM-DDTHH:mm format)
+      let formattedDeadline: string | undefined = undefined
+      if (formData.submission_deadline) {
+        const date = formData.submission_deadline
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        formattedDeadline = `${year}-${month}-${day}T${hours}:${minutes}`
+      }
+
       if (editingAssignment) {
         await adminService.updateAssignment(editingAssignment.AssignmentID, {
           Course_ID: formData.Course_ID,
           Semester: formData.Semester,
           MaxScore: formData.MaxScore ? parseInt(formData.MaxScore) : undefined,
           accepted_specification: formData.accepted_specification || undefined,
-          submission_deadline: formData.submission_deadline || undefined,
+          submission_deadline: formattedDeadline,
           instructions: formData.instructions || undefined,
+          TaskURL: formData.TaskURL || undefined,
         })
         alert(t('admin.updateAssignmentSuccess') || t('admin.updateCourseSuccess') || 'Assignment updated successfully')
       } else {
@@ -320,13 +391,15 @@ export default function AssignmentManagementPage() {
           Semester: formData.Semester,
           MaxScore: formData.MaxScore ? parseInt(formData.MaxScore) : 10,
           accepted_specification: formData.accepted_specification || null,
-          submission_deadline: formData.submission_deadline,
+          submission_deadline: formattedDeadline || null,
           instructions: formData.instructions || null,
+          TaskURL: formData.TaskURL || null,
         })
         alert(t('admin.createAssignmentSuccess') || t('admin.createCourseSuccess') || 'Assignment created successfully')
       }
 
       setIsDialogOpen(false)
+      setSelectedFile(null)
       
       // Refresh assignments for the course
       if (formData.Course_ID) {
@@ -990,15 +1063,14 @@ export default function AssignmentManagementPage() {
                 )}>
                   {t('admin.deadline')} *
                 </Label>
-                <Input
-                  id="deadline"
-                  type="datetime-local"
-                  value={formData.submission_deadline}
-                  onChange={(e) => setFormData({ ...formData, submission_deadline: e.target.value })}
+                <DateTimePicker
+                  date={formData.submission_deadline}
+                  onDateChange={(date) => setFormData({ ...formData, submission_deadline: date })}
+                  placeholder={t('admin.deadline') || "Select deadline"}
                   className={cn(
-                    "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
                     getNeoBrutalismInputClasses(neoBrutalismMode)
                   )}
+                  minDate={new Date()}
                 />
               </div>
               <div className="space-y-2">
@@ -1036,6 +1108,118 @@ export default function AssignmentManagementPage() {
                     getNeoBrutalismInputClasses(neoBrutalismMode)
                   )}
                 />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="task-file" className={cn(
+                  "text-[#211c37] dark:text-white",
+                  getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                )}>
+                  {t('admin.taskURL')} <span className="text-gray-500 dark:text-gray-400 text-sm">({t('common.optional')})</span>
+                </Label>
+                
+                {/* File Upload */}
+                <div className="space-y-3">
+                  {!formData.TaskURL && !selectedFile && (
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id="task-file"
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileChange}
+                        disabled={uploadingFile || !formData.Course_ID}
+                        className={cn(
+                          "cursor-pointer",
+                          neoBrutalismMode
+                            ? "border-4 border-[#1a1a1a] dark:border-[#FFFBEB] rounded-none"
+                            : "border-[#e5e7e7]"
+                        )}
+                      />
+                      {!formData.Course_ID && (
+                        <p className={cn(
+                          "text-xs text-amber-600 dark:text-amber-400",
+                          getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                        )}>
+                          {t('admin.selectCourseFirst') || 'Please select a course first'}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Uploading State */}
+                  {uploadingFile && (
+                    <div className="flex items-center gap-2 p-3 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                      <span className={cn(
+                        "text-sm text-blue-600 dark:text-blue-400",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
+                        {t('admin.uploading') || 'Uploading...'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Selected File / Uploaded URL */}
+                  {(selectedFile || formData.TaskURL) && (
+                    <div className="flex items-center gap-3 p-3 border border-[#e5e7e7] dark:border-[#333] rounded-lg bg-gray-50 dark:bg-[#2a2a2a]">
+                      <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        {selectedFile && (
+                          <p className={cn(
+                            "text-sm font-medium text-[#211c37] dark:text-white truncate",
+                            getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                          )}>
+                            {selectedFile.name}
+                          </p>
+                        )}
+                        {formData.TaskURL && (
+                          <a
+                            href={formData.TaskURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                              "text-sm text-blue-600 dark:text-blue-400 hover:underline truncate block",
+                              getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                            )}
+                          >
+                            {formData.TaskURL}
+                          </a>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveFile}
+                        className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
+                      >
+                        <X className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Manual URL Input (Fallback) */}
+                  {!selectedFile && !formData.TaskURL && (
+                    <div className="mt-2">
+                      <p className={cn(
+                        "text-xs text-gray-500 dark:text-gray-400 mb-2",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}>
+                        {t('admin.orEnterUrl') || 'Or enter URL manually:'}
+                      </p>
+                      <Input
+                        id="task-url"
+                        type="url"
+                        value={formData.TaskURL}
+                        onChange={(e) => setFormData({ ...formData, TaskURL: e.target.value })}
+                        placeholder="https://example.com/assignment.pdf"
+                        className={cn(
+                          "bg-white dark:bg-[#2a2a2a] text-[#211c37] dark:text-white",
+                          getNeoBrutalismInputClasses(neoBrutalismMode)
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1107,6 +1291,30 @@ export default function AssignmentManagementPage() {
                     {viewingAssignment.instructions || 'N/A'}
                   </p>
                 </div>
+                {viewingAssignment.TaskURL && (
+                  <div>
+                    <h4 className={cn(
+                      "font-semibold text-[#211c37] dark:text-white mb-2",
+                      getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')
+                    )}>
+                      {t('admin.taskURL') || 'Task URL'}:
+                    </h4>
+                    <a
+                      href={viewingAssignment.TaskURL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(
+                        "text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-2 break-all",
+                        getNeoBrutalismTextClasses(neoBrutalismMode, 'body')
+                      )}
+                    >
+                      <span>{viewingAssignment.TaskURL}</span>
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <span className={cn(

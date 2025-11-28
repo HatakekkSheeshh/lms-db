@@ -23,6 +23,7 @@ BEGIN
         ad.accepted_specification,
         ad.submission_deadline,
         ad.instructions,
+        ad.TaskURL,
         c.Name as Course_Name,
         (SELECT COUNT(*) FROM [Assignment_Submission] asub WHERE asub.AssignmentID = ad.AssignmentID) as StudentCount
     FROM [Assignment_Definition] ad
@@ -50,6 +51,7 @@ BEGIN
         ad.accepted_specification,
         ad.submission_deadline,
         ad.instructions,
+        ad.TaskURL,
         c.Name as Course_Name,
         (SELECT COUNT(*) FROM [Assignment_Submission] asub WHERE asub.AssignmentID = ad.AssignmentID) as StudentCount
     FROM [Assignment_Definition] ad
@@ -70,7 +72,8 @@ CREATE PROCEDURE [dbo].[CreateAssignment]
     @MaxScore INT = NULL,
     @accepted_specification NVARCHAR(50) = NULL,
     @submission_deadline DATETIME,
-    @instructions NVARCHAR(MAX) = NULL
+    @instructions NVARCHAR(MAX) = NULL,
+    @TaskURL NVARCHAR(MAX) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -87,7 +90,8 @@ BEGIN
             MaxScore,
             accepted_specification,
             submission_deadline,
-            instructions
+            instructions,
+            TaskURL
         )
         VALUES (
             @Course_ID,
@@ -95,7 +99,8 @@ BEGIN
             ISNULL(@MaxScore, 10),
             @accepted_specification,
             @submission_deadline,
-            @instructions
+            @instructions,
+            @TaskURL
         );
         
         SET @AssignmentID = SCOPE_IDENTITY();
@@ -111,6 +116,7 @@ BEGIN
             ad.accepted_specification,
             ad.submission_deadline,
             ad.instructions,
+            ad.TaskURL,
             c.Name as Course_Name,
             (SELECT COUNT(*) FROM [Assignment_Submission] asub WHERE asub.AssignmentID = ad.AssignmentID) as StudentCount
         FROM [Assignment_Definition] ad
@@ -137,7 +143,8 @@ CREATE PROCEDURE [dbo].[UpdateAssignment]
     @MaxScore INT = NULL,
     @accepted_specification NVARCHAR(50) = NULL,
     @submission_deadline DATETIME = NULL,
-    @instructions NVARCHAR(MAX) = NULL
+    @instructions NVARCHAR(MAX) = NULL,
+    @TaskURL NVARCHAR(MAX) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -150,7 +157,8 @@ BEGIN
             MaxScore = ISNULL(@MaxScore, MaxScore),
             accepted_specification = ISNULL(@accepted_specification, accepted_specification),
             submission_deadline = ISNULL(@submission_deadline, submission_deadline),
-            instructions = ISNULL(@instructions, instructions)
+            instructions = ISNULL(@instructions, instructions),
+            TaskURL = ISNULL(@TaskURL, TaskURL)
         WHERE AssignmentID = @AssignmentID;
         
         IF @@ROWCOUNT = 0
@@ -165,6 +173,7 @@ BEGIN
             ad.accepted_specification,
             ad.submission_deadline,
             ad.instructions,
+            ad.TaskURL,
             c.Name as Course_Name,
             (SELECT COUNT(*) FROM [Assignment_Submission] asub WHERE asub.AssignmentID = ad.AssignmentID) as StudentCount
         FROM [Assignment_Definition] ad
@@ -231,6 +240,7 @@ BEGIN
         ad.accepted_specification,
         ad.submission_deadline,
         ad.instructions,
+        ad.TaskURL,
         c.Name as Course_Name,
         (SELECT COUNT(*) FROM [Assignment_Submission] asub WHERE asub.AssignmentID = ad.AssignmentID) as StudentCount
     FROM [Assignment_Definition] ad
