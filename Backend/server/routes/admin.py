@@ -1,8 +1,10 @@
 from flask import Blueprint, request, jsonify
 from config.database import get_db_connection
 from utils.jwt_utils import require_auth, require_role
+from utils.azure_storage import get_azure_storage
 import bcrypt
 import time
+import os
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -679,7 +681,7 @@ def get_all_assignments():
         result = []
         for assignment in assignments:
             try:
-                # Tuple access: AssignmentID, Course_ID, Semester, MaxScore, accepted_specification, submission_deadline, instructions, Course_Name, StudentCount
+                # Tuple access: AssignmentID, Course_ID, Semester, MaxScore, accepted_specification, submission_deadline, instructions, TaskURL, Course_Name, StudentCount
                 result.append({
                     'AssignmentID': assignment[0],
                     'Course_ID': assignment[1],
@@ -688,8 +690,9 @@ def get_all_assignments():
                     'accepted_specification': assignment[4],
                     'submission_deadline': str(assignment[5]) if assignment[5] else None,
                     'instructions': assignment[6],
-                    'Course_Name': assignment[7] if len(assignment) > 7 else None,
-                    'StudentCount': assignment[8] if len(assignment) > 8 else 0,
+                    'TaskURL': assignment[7] if len(assignment) > 7 else None,
+                    'Course_Name': assignment[8] if len(assignment) > 8 else None,
+                    'StudentCount': assignment[9] if len(assignment) > 9 else 0,
                 })
             except Exception as parse_error:
                 print(f'[Backend] Error parsing assignment: {parse_error}, assignment data: {assignment}')
@@ -725,7 +728,7 @@ def get_assignments_by_course():
         result = []
         for assignment in assignments:
             try:
-                # Tuple access: AssignmentID, Course_ID, Semester, MaxScore, accepted_specification, submission_deadline, instructions, Course_Name, StudentCount
+                # Tuple access: AssignmentID, Course_ID, Semester, MaxScore, accepted_specification, submission_deadline, instructions, TaskURL, Course_Name, StudentCount
                 result.append({
                     'AssignmentID': assignment[0],
                     'Course_ID': assignment[1],
@@ -734,8 +737,9 @@ def get_assignments_by_course():
                     'accepted_specification': assignment[4],
                     'submission_deadline': str(assignment[5]) if assignment[5] else None,
                     'instructions': assignment[6],
-                    'Course_Name': assignment[7] if len(assignment) > 7 else None,
-                    'StudentCount': assignment[8] if len(assignment) > 8 else 0,
+                    'TaskURL': assignment[7] if len(assignment) > 7 else None,
+                    'Course_Name': assignment[8] if len(assignment) > 8 else None,
+                    'StudentCount': assignment[9] if len(assignment) > 9 else 0,
                 })
             except Exception as parse_error:
                 print(f'[Backend] Error parsing assignment: {parse_error}, assignment data: {assignment}')
@@ -775,13 +779,14 @@ def create_assignment():
                 submission_deadline = data.get('submission_deadline')
         
         # Call stored procedure (no Section_ID needed)
-        cursor.execute('EXEC CreateAssignment %s, %s, %s, %s, %s, %s', (
+        cursor.execute('EXEC CreateAssignment %s, %s, %s, %s, %s, %s, %s', (
             data['Course_ID'],
             data['Semester'],
             data.get('MaxScore', 10),
             data.get('accepted_specification'),
             submission_deadline,
-            data.get('instructions')
+            data.get('instructions'),
+            data.get('TaskURL')
         ))
 
         result = cursor.fetchone()
@@ -799,8 +804,9 @@ def create_assignment():
                 'accepted_specification': result[4],
                 'submission_deadline': str(result[5]) if result[5] else None,
                 'instructions': result[6],
-                'Course_Name': result[7] if len(result) > 7 else None,
-                'StudentCount': result[8] if len(result) > 8 else 0,
+                'TaskURL': result[7] if len(result) > 7 else None,
+                'Course_Name': result[8] if len(result) > 8 else None,
+                'StudentCount': result[9] if len(result) > 9 else 0,
             }
         }), 201
     except Exception as e:
@@ -808,6 +814,43 @@ def create_assignment():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': f'Failed to create assignment: {str(e)}'}), 500
+
+@admin_bp.route('/assignments/upload-task', methods=['POST'])
+@require_auth
+@require_role(['admin'])
+def upload_assignment_task():
+    """Upload assignment task PDF to Azure Blob Storage"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        course_id = request.form.get('course_id')
+        
+        if not course_id:
+            return jsonify({'success': False, 'error': 'Course ID is required'}), 400
+        
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
+        
+        # Check if file is PDF
+        if not file.filename.lower().endswith('.pdf'):
+            return jsonify({'success': False, 'error': 'Only PDF files are allowed'}), 400
+        
+        # Upload to Azure Blob Storage
+        azure_storage = get_azure_storage()
+        file_url = azure_storage.upload_assignment_file(file, course_id)
+        
+        return jsonify({
+            'success': True,
+            'url': file_url,
+            'message': 'File uploaded successfully'
+        }), 200
+    except Exception as e:
+        print(f'Upload assignment task error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Failed to upload file: {str(e)}'}), 500
 
 @admin_bp.route('/assignments/<int:assignment_id>', methods=['PUT'])
 @require_auth
@@ -834,14 +877,15 @@ def update_assignment(assignment_id):
                 print(f'Error parsing submission_deadline: {e}')
                 submission_deadline = data.get('submission_deadline')
 
-        cursor.execute('EXEC UpdateAssignment %s, %s, %s, %s, %s, %s, %s', (
+        cursor.execute('EXEC UpdateAssignment %s, %s, %s, %s, %s, %s, %s, %s', (
             assignment_id,
             data.get('Course_ID'),
             data.get('Semester'),
             data.get('MaxScore'),
             data.get('accepted_specification'),
             submission_deadline,
-            data.get('instructions')
+            data.get('instructions'),
+            data.get('TaskURL')
         ))
 
         result = cursor.fetchone()
@@ -859,8 +903,9 @@ def update_assignment(assignment_id):
                 'accepted_specification': result[4],
                 'submission_deadline': str(result[5]) if result[5] else None,
                 'instructions': result[6],
-                'Course_Name': result[7] if len(result) > 7 else None,
-                'StudentCount': result[8] if len(result) > 8 else 0,
+                'TaskURL': result[7] if len(result) > 7 else None,
+                'Course_Name': result[8] if len(result) > 8 else None,
+                'StudentCount': result[9] if len(result) > 9 else 0,
             }
         })
     except Exception as e:

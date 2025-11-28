@@ -24,7 +24,8 @@
     "confirm": "Confirm",
     "yes": "Yes",
     "no": "No",
-    "size": "Size"
+    "size": "Size",
+    "optional": "(Optional)"
   },
   "auth": {
     "loginTitle": "Welcome back!",
@@ -165,6 +166,8 @@
     "searchPlaceholder": "Search courses...",
     "all": "All",
     "courseCode": "Course Code",
+    "course": "Course",
+    "courses": "Courses",
     "students": "Students",
     "noCoursesFound": "No courses found",
     "noCoursesYet": "No courses yet",
@@ -194,6 +197,7 @@
     "sectionId": "Section ID",
     "courseNotFound": "Course not found",
     "sectionNotFound": "Section not found",
+    "errorLoadingSection": "Failed to load section details. Please try again later.",
     "deadline": "Deadline",
     "assignmentGrades": "Assignment Grades",
     "noAssignmentGrades": "No assignment grades available",
@@ -263,7 +267,8 @@
     "yourScore": "Your Score",
     "noQuizzes": "No quizzes found",
     "noQuizzesAvailable": "No quizzes available",
-    "allQuizzes": "All your quizzes across all courses"
+    "allQuizzes": "All your quizzes across all courses",
+    "noQuizzesOrAssignments": "No quizzes or assignments available"
   },
   "grades": {
     "title": "Grades",
@@ -773,6 +778,7 @@
     "selectDate": "Select date",
     "assignmentManagement": "Assignment Management",
     "assignmentManagementSubtitle": "Manage all assignments in the system",
+    "assignment": "Assignment",
     "addAssignment": "Add Assignment",
     "editAssignment": "Edit Assignment",
     "deleteAssignment": "Delete Assignment",
@@ -780,6 +786,14 @@
     "deadline": "Deadline",
     "instructions": "Instructions",
     "acceptedFormat": "Accepted Format",
+    "taskURL": "Assignment Task",
+    "onlyPdfAllowed": "Only PDF files are allowed",
+    "fileTooLarge": "File size must be less than 10MB",
+    "selectCourseFirst": "Please select a course first",
+    "fileUploadedSuccessfully": "File uploaded successfully",
+    "uploadFailed": "Failed to upload file",
+    "uploading": "Uploading...",
+    "orEnterUrl": "Or enter URL manually:",
     "noAssignments": "No assignments found",
     "assignmentList": "Assignment List",
     "totalAssignments": "Total Assignments",
@@ -964,6 +978,7 @@
     "title": "Submit Assignment",
     "subtitle": "Upload your assignment file",
     "backToAssignments": "Back to Assignments",
+    "backToCourse": "Back to Course",
     "selectFile": "Select File",
     "selected": "Selected",
     "submitting": "Submitting...",

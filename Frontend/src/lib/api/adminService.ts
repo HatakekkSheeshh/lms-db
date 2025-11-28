@@ -119,8 +119,9 @@ export interface AdminAssignment {
   Semester: string
   MaxScore: number | null
   accepted_specification: string | null
-  submission_deadline: string
+  submission_deadline: string | null
   instructions: string | null
+  TaskURL: string | null  // Link to assignment PDF
   StudentCount?: number  // Number of students who have submitted
 }
 
@@ -1226,6 +1227,28 @@ export const adminService = {
       timeout: 15000, // 15 seconds for complex statistics queries
     })
     return response.data
+  },
+
+  // Upload assignment task file
+  async uploadAssignmentTask(file: File, courseId: string): Promise<{ success: boolean; url?: string; error?: string }> {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('course_id', courseId)
+
+      const response = await apiClient.post('/admin/assignments/upload-task', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      return response.data
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to upload file',
+      }
+    }
   },
 }
 

@@ -64,8 +64,8 @@ export default function AssignmentListPage() {
         
         // Sort by deadline (earliest first)
         assignmentsWithCourses.sort((a, b) => {
-          const deadlineA = new Date(a.submission_deadline).getTime()
-          const deadlineB = new Date(b.submission_deadline).getTime()
+          const deadlineA = a.submission_deadline ? new Date(a.submission_deadline).getTime() : 0
+          const deadlineB = b.submission_deadline ? new Date(b.submission_deadline).getTime() : 0
           return deadlineA - deadlineB
         })
         
@@ -80,7 +80,8 @@ export default function AssignmentListPage() {
     loadAssignments()
   }, [user])
 
-  const getStatus = (deadline: string) => {
+  const getStatus = (deadline: string | null | undefined) => {
+    if (!deadline) return { text: t('assignments.onTime'), variant: 'secondary' as const, color: 'bg-green-500' }
     const now = new Date()
     const deadlineDate = new Date(deadline)
     const diff = deadlineDate.getTime() - now.getTime()
@@ -109,6 +110,7 @@ export default function AssignmentListPage() {
     >
       <div ref={containerRef} className="space-y-4">
         {assignments.map((assignment) => {
+          if (!assignment.submission_deadline) return null
           const status = getStatus(assignment.submission_deadline)
           const deadlineDate = new Date(assignment.submission_deadline)
           const now = new Date()
@@ -229,29 +231,31 @@ export default function AssignmentListPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => navigate(ROUTES.ASSIGNMENT_DETAIL.replace(':assignmentId', assignment.Assessment_ID.toString()))}
-                    className={cn(
-                      neoBrutalismMode 
-                        ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'primary', "hover:bg-gray-800 dark:hover:bg-gray-200")
-                        : "bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black"
-                    )}
-                  >
-                    <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('assignments.viewDetails')}</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate(ROUTES.ASSIGNMENT_SUBMIT.replace(':assignmentId', assignment.Assessment_ID.toString()))}
-                    className={cn(
-                      neoBrutalismMode 
-                        ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline', "hover:bg-gray-50 dark:hover:bg-[#2a2a2a]")
-                        : "border-[#e5e7e7] dark:border-[#333] hover:bg-gray-50 dark:hover:bg-[#2a2a2a]"
-                    )}
-                  >
-                    <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('assignments.submit')}</span>
-                  </Button>
-                </div>
+                {assignment.Assessment_ID && (
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => navigate(ROUTES.ASSIGNMENT_DETAIL.replace(':assignmentId', assignment.Assessment_ID!.toString()))}
+                      className={cn(
+                        neoBrutalismMode 
+                          ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'primary', "hover:bg-gray-800 dark:hover:bg-gray-200")
+                          : "bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black"
+                      )}
+                    >
+                      <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('assignments.viewDetails')}</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate(ROUTES.ASSIGNMENT_SUBMIT.replace(':assignmentId', assignment.Assessment_ID!.toString()))}
+                      className={cn(
+                        neoBrutalismMode 
+                          ? getNeoBrutalismButtonClasses(neoBrutalismMode, 'outline', "hover:bg-gray-50 dark:hover:bg-[#2a2a2a]")
+                          : "border-[#e5e7e7] dark:border-[#333] hover:bg-gray-50 dark:hover:bg-[#2a2a2a]"
+                      )}
+                    >
+                      <span className={getNeoBrutalismTextClasses(neoBrutalismMode, 'bold')}>{t('assignments.submit')}</span>
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )

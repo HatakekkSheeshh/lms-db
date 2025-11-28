@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context/AuthProvider'
+import { useNavigate } from 'react-router-dom'
+import type { Quiz, Assignment } from '@/types'
+import { ROUTES } from '@/constants/routes'
 import {
   Accordion,
   AccordionContent,
@@ -58,11 +61,15 @@ const CONTENT_SECTIONS: CourseContent[] = [
 
 interface CourseContentCardProps {
   courseId: number
+  sectionId?: string
+  quizzes?: Quiz[]
+  assignments?: Assignment[]
 }
 
-export default function CourseContentCard({ courseId }: CourseContentCardProps) {
+export default function CourseContentCard({ courseId, sectionId, quizzes = [], assignments = [] }: CourseContentCardProps) {
   const { t } = useTranslation()
   const { role, user } = useAuth()
+  const navigate = useNavigate()
   const isTutor = role === 'tutor' || role === 'admin'
   const isStudent = role === 'student'
   const [contents, setContents] = useState<Record<string, ContentItem[]>>({})
@@ -93,6 +100,8 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
 
   useEffect(() => {
     const saved = localStorage.getItem(storageKey)
+    let localContents: Record<string, ContentItem[]> = {}
+    
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
@@ -113,11 +122,79 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
             }]
           }
         })
-        setContents(converted)
+        localContents = converted
       } catch (e) {
         console.error('Failed to load course content:', e)
       }
     }
+    
+    // Convert quizzes from database to ContentItem format
+    const quizItems: ContentItem[] = quizzes.map((quiz) => {
+      let questions: any[] = []
+      try {
+        if (quiz.Questions) {
+          const parsed = JSON.parse(quiz.Questions)
+          if (Array.isArray(parsed)) {
+            questions = parsed.map((q: any, idx: number) => ({
+              id: idx.toString(),
+              question: q.question?.en || q.question?.vi || q.question || '',
+              answers: Object.values(q.answers || {}).map((a: any) => a.en || a.vi || a || ''),
+              correctAnswer: q.correct ? q.correct.charCodeAt(0) - 65 : 0, // Convert A/B/C/D to 0/1/2/3
+            }))
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse quiz questions:', e)
+      }
+
+      return {
+        id: `quiz-${quiz.QuizID || quiz.Assessment_ID}`,
+        type: 'quiz' as ContentType,
+        sectionId: sectionId || quiz.Section_ID?.toString() || '',
+        title: quiz.content || t('quizzes.quiz'),
+        quiz: {
+          questions,
+          passScore: quiz.pass_score || 0,
+          timeLimit: quiz.Time_limits || '00:00:00',
+        },
+        createdAt: quiz.Start_Date || new Date().toISOString(),
+      }
+    })
+
+    // Convert assignments from database to ContentItem format
+    const assignmentItems: ContentItem[] = assignments.map((assignment: any) => ({
+      id: `assignment-${assignment.AssignmentID || assignment.Assessment_ID}`,
+      type: 'assignment' as ContentType,
+      sectionId: sectionId || assignment.Section_ID?.toString() || '',
+      title: assignment.instructions || t('assignments.assignment'),
+      assignment: {
+        maxScore: assignment.MaxScore || 10,
+        deadline: assignment.submission_deadline || new Date().toISOString(),
+        acceptedFormat: assignment.accepted_specification || undefined,
+        instructions: assignment.instructions || undefined,
+        attachment: assignment.TaskURL ? {
+          fileName: t('admin.taskURL') || 'Assignment Task',
+          fileUrl: assignment.TaskURL,
+          fileSize: 0,
+        } : undefined,
+      },
+      createdAt: assignment.submission_deadline || new Date().toISOString(),
+    }))
+
+    // Merge local contents with database quizzes and assignments
+    const mergedContents: Record<string, ContentItem[]> = { ...localContents }
+    
+    // Add quizzes to 'quiz' section
+    if (quizItems.length > 0) {
+      mergedContents['quiz'] = [...(mergedContents['quiz'] || []), ...quizItems]
+    }
+    
+    // Add assignments to 'assignment' section
+    if (assignmentItems.length > 0) {
+      mergedContents['assignment'] = [...(mergedContents['assignment'] || []), ...assignmentItems]
+    }
+
+    setContents(mergedContents)
     
     // Load submissions and quiz results for students
     if (isStudent) {
@@ -139,7 +216,7 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
         }
       }
     }
-  }, [courseId, storageKey, submissionStorageKey, quizResultStorageKey, isStudent])
+  }, [courseId, storageKey, submissionStorageKey, quizResultStorageKey, isStudent, quizzes, assignments, sectionId, t])
 
   const handleExpandAll = () => {
     if (expandedItems.length === CONTENT_SECTIONS.length) {
@@ -318,7 +395,22 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
           {isStudent && (
             <div className="mt-3 pt-3 border-t border-[#e5e7e7] dark:border-[#333]">
               <Button
-                onClick={() => setTakingQuiz(content)}
+                onClick={() => {
+                  // If quiz is from database, navigate to quiz page
+                  if (content.id.startsWith('quiz-')) {
+                    const quizId = content.id.replace('quiz-', '')
+                    const quiz = quizzes.find(q => (q.QuizID?.toString() === quizId) || (q.Assessment_ID?.toString() === quizId))
+                    if (quiz?.Assessment_ID) {
+                      navigate(ROUTES.QUIZ_TAKE.replace(':quizId', quiz.Assessment_ID.toString()))
+                    } else if (quiz?.QuizID) {
+                      navigate(ROUTES.QUIZ_TAKE.replace(':quizId', quiz.QuizID.toString()))
+                    } else {
+                      setTakingQuiz(content)
+                    }
+                  } else {
+                    setTakingQuiz(content)
+                  }
+                }}
                 variant={result ? "outline" : "default"}
                 className={result 
                   ? "w-full border-[#e5e7e7] dark:border-[#333]"
@@ -430,7 +522,26 @@ export default function CourseContentCard({ courseId }: CourseContentCardProps) 
               {isStudent && (
                 <div className="mt-3 pt-3 border-t border-[#e5e7e7] dark:border-[#333]">
                   <Button
-                    onClick={() => setSubmittingAssignment(content)}
+                    onClick={() => {
+                      // If assignment is from database, navigate to assignment submit page
+                      if (content.id.startsWith('assignment-')) {
+                        const assignmentId = content.id.replace('assignment-', '')
+                        const assignment = assignments.find((a: any) => 
+                          (a.AssignmentID?.toString() === assignmentId) || 
+                          (a.Assessment_ID?.toString() === assignmentId)
+                        )
+                        // Prefer AssignmentID over Assessment_ID for navigation
+                        if (assignment?.AssignmentID) {
+                          navigate(`${ROUTES.ASSIGNMENT_SUBMIT.replace(':assignmentId', assignment.AssignmentID.toString())}?courseId=${courseId || assignment.Course_ID || ''}&sectionId=${sectionId || ''}`)
+                        } else if (assignment?.Assessment_ID) {
+                          navigate(`${ROUTES.ASSIGNMENT_SUBMIT.replace(':assignmentId', assignment.Assessment_ID.toString())}?courseId=${courseId || assignment.Course_ID || ''}&sectionId=${sectionId || ''}`)
+                        } else {
+                          setSubmittingAssignment(content)
+                        }
+                      } else {
+                        setSubmittingAssignment(content)
+                      }
+                    }}
                     disabled={!canSubmit}
                     className="w-full bg-[#3bafa8] hover:bg-[#2a8d87] text-white"
                   >

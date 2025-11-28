@@ -35,6 +35,7 @@ def deploy_procedures(verbose=False):
         'student_course_detail.sql',
         'student_courses_with_sections.sql',
         'student_section_detail.sql',
+        'get_assignment_by_assessment_id.sql',
         'assessment_queries.sql',
         'update_user_role.sql',
         'reset_user_password.sql',

@@ -576,6 +576,9 @@ def get_student_section_assignments(section_id, course_id, semester):
         
         assignments = []
         for row in results:
+            # Procedure returns: AssignmentID, Course_ID, Semester, instructions, accepted_specification, 
+            # submission_deadline, TaskURL, MaxScore, Assessment_ID, score, status, SubmitDate, 
+            # late_flag_indicator, attached_files, Comments, status_display
             assignments.append({
                 'AssignmentID': int(row[0]) if row[0] else None,
                 'Course_ID': row[1],
@@ -583,14 +586,16 @@ def get_student_section_assignments(section_id, course_id, semester):
                 'instructions': row[3],
                 'accepted_specification': row[4],
                 'submission_deadline': str(row[5]) if row[5] else None,
-                'Assessment_ID': row[6],
-                'score': float(row[7]) if row[7] else None,
-                'status': row[8],
-                'SubmitDate': str(row[9]) if row[9] else None,
-                'late_flag_indicator': bool(row[10]) if row[10] is not None else None,
-                'attached_files': row[11],
-                'Comments': row[12],
-                'status_display': row[13]
+                'TaskURL': row[6] if len(row) > 6 else None,  # TaskURL
+                'MaxScore': int(row[7]) if len(row) > 7 and row[7] else None,  # MaxScore
+                'Assessment_ID': row[8] if len(row) > 8 else None,
+                'score': float(row[9]) if len(row) > 9 and row[9] else None,
+                'status': row[10] if len(row) > 10 else None,
+                'SubmitDate': str(row[11]) if len(row) > 11 and row[11] else None,
+                'late_flag_indicator': bool(row[12]) if len(row) > 12 and row[12] is not None else None,
+                'attached_files': row[13] if len(row) > 13 else None,
+                'Comments': row[14] if len(row) > 14 else None,
+                'status_display': row[15] if len(row) > 15 else None
             })
         
         return jsonify(assignments)
