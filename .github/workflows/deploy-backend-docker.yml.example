@@ -15,7 +15,7 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: your-app-service-name
-  AZURE_CONTAINER_REGISTRY: your-acr-name  # Tên Azure Container Registry
+  AZURE_CONTAINER_REGISTRY: your-acr-name 
   IMAGE_NAME: lms-backend
 
 jobs:
