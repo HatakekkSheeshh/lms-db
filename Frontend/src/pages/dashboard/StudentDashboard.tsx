@@ -15,9 +15,9 @@ import { useNeoBrutalismMode, getNeoBrutalismCardClasses, getNeoBrutalismStatCar
 import { cn } from '@/lib/utils'
 import '@/lib/animations/gsap-setup'
 
-// Figma assets URLs
-const imgProfilePicture = "https://www.figma.com/api/mcp/asset/3c99bdb9-fc77-4a11-92f6-351812a3d9bf"
-const imgVerificationIcon = "https://www.figma.com/api/mcp/asset/757dafdc-d5a2-4914-af02-10eb336d23e4"
+// Profile assets
+const imgProfilePicture = "/avatar.png"
+const imgVerificationIcon = "/verification.svg"
 
 export default function StudentDashboard() {
   const { t } = useTranslation()
