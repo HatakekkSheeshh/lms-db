@@ -492,7 +492,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 * **Nguyễn Quốc Hiệu** — Database Management & Backend (**GitHub:** [@HatakekkSheeshh](https://github.com/HatakekkSheeshh))
 * **Phan Tiến Huy** — EERD, Mapping, Database (**GitHub:** [@Xofaivn](https://github.com/Xofaivn))
 * **Phạm Quang Tiến Thành** — EERD, Mapping, Database (**GitHub:** [@Thanhizme](https://github.com/Thanhizme))
-* **Hải Tuấn** — Backend (**GitHub:** [@Tuancoolboy](https://github.com/Tuancoolboy))
+* **Vũ Hải Tuấn** — Backend (**GitHub:** [@Tuancoolboy](https://github.com/Tuancoolboy))
 
 ## Contributing
 
