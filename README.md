@@ -2,7 +2,7 @@
 
 A comprehensive Learning Management System built with React and TypeScript for the frontend, and Flask with Python for the backend, integrated with Azure SQL Database.
 
-## Take a glane at my website
+## Take a glane at our website
 [LMS system](https://lms-db-alpha.vercel.app)
 
 ## Project Structure
@@ -485,6 +485,14 @@ The workflow also supports Azure Container Registry (ACR) as an alternative to G
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contribution
+
+* **Chu Nguyễn Tuấn Anh** — Frontend & Backend (**GitHub:** [@Tanh1c](https://github.com/Tanh1c))
+* **Nguyễn Quốc Hiệu** — Database Management & Backend (**GitHub:** [@HatakekkSheeshh](https://github.com/HatakekkSheeshh))
+* **Phan Tiến Huy** — EERD, Mapping, Database (**GitHub:** [@Xofaivn](https://github.com/Xofaivn))
+* **Phạm Quang Tiến Thành** — EERD, Mapping, Database (**GitHub:** [@Thanhizme](https://github.com/Thanhizme))
+* **Hải Tuấn** — Backend (**GitHub:** [@Tuancoolboy](https://github.com/Tuancoolboy))
 
 ## Contributing
 
