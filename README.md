@@ -3,9 +3,8 @@
 A comprehensive Learning Management System built with React and TypeScript for the frontend, and Flask with Python for the backend, integrated with Azure SQL Database.
 
 ## Take a glane at our website
-[LMS system](https://lms-db-alpha.vercel.app)
+[student.hcmut.online](https://student.hcmut.online/login)
 ```
-Warning: Our deployment had broken down due to Student Plan of Azure expired =((((((
 Note: Microsoft, please collab with us!!!
 ```
 ## Project Demo
