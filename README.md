@@ -6,7 +6,11 @@ A comprehensive Learning Management System built with React and TypeScript for t
 [LMS system](https://lms-db-alpha.vercel.app)
 ```
 Warning: Our deployment had broken down due to Student Plan of Azure expired =((((((
+Note: Microsoft, please collab with us!!!
 ```
+## Project Demo
+![Alt Text](image/video_demo.gif)
+
 
 ## Project Structure
 
